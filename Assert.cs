@@ -44,10 +44,10 @@ namespace DevTools
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsNull(object o)
+        public static void IsNull(object obj)
         {
 #if NULL_CHECKS
-            if (o != null)
+            if (obj != null)
             {
                 throw new InvalidDataException("Expected null"); ;
             }
@@ -66,10 +66,10 @@ namespace DevTools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsNotNull(object o)
+        public static void IsNotNull(object obj)
         {
 #if NULL_CHECKS
-            if (o == null)
+            if (obj == null)
             {
                 throw new NullReferenceException("Expected not-null"); ;
             }
