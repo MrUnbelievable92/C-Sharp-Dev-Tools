@@ -206,7 +206,7 @@ namespace DevTools
             where T : IComparable<T>
         {
 #if COMPARE_CHECKS
-            if (value.CompareTo(limit) == 1)
+            if (value.CompareTo(limit) == -1)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than or equal to { limit }");
             }
