@@ -245,7 +245,7 @@ namespace DevTools
 #if BIT_SHIFT_CHECKS
             if ((uint)amount >= (uint)sizeof(T) * 8u)
             {
-                throw new ArgumentOutOfRangeException($"Shifting a { typeof(T) } by { amount } is undefined");
+                throw new ArgumentOutOfRangeException($"Shifting a { typeof(T) } by { amount } results in undefined behavior");
             }
 #endif
         }
