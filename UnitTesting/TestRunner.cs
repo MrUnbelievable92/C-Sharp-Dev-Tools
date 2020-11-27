@@ -20,7 +20,9 @@ namespace DevTools
             tests = new List<UnitTestData>();
             wrongSignature = new List<UnitTestData>();
 
+            numPassedTests = numFailedTests = 0;
 
+            
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 string assemblyName = assembly.GetName().Name;
@@ -72,7 +74,7 @@ namespace DevTools
 
             foreach (UnitTestData data in wrongSignature)
             {
-                UnityEngine.Debug.LogError("<color=red>WRONG SIGNATURE</color> - Methods must be static, parameterless and return a boolean, representing the test result: " + data.ToString());
+                UnityEngine.Debug.LogError("<color=red>WRONG METHOD SIGNATURE</color> - Methods must be static, parameterless and return a boolean, representing the test result: " + data.ToString());
             }
         }
 
@@ -94,6 +96,8 @@ namespace DevTools
                 numFailedTests++;
             }
         }
+
+
         public void RunTests()
         {
             numFailedTests = numPassedTests = 0;
@@ -110,8 +114,9 @@ namespace DevTools
 
             time.Stop();
 
-            UnityEngine.Debug.Log($"{ numPassedTests } passed - { numFailedTests } failed tests in { (float)time.ElapsedMilliseconds / 1000f } seconds");
+            UnityEngine.Debug.Log($"<color=green>{ numPassedTests } passed</color> and <color={ ((numFailedTests == 0) ? "green" : "red") }>{ numFailedTests } failed</color> tests in { (float)time.ElapsedMilliseconds / 1000f } seconds");
         }
+
         public void RunTests(string assemblyName, params string[] categories)
         {
             int firstIndex = 0;

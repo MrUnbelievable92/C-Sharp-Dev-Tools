@@ -21,10 +21,10 @@ namespace DevTools
     unsafe public static class Assert
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsTrue(bool predicate)
+        public static void IsTrue(bool condition)
         {
 #if BOOL_CHECKS
-            if (!predicate)
+            if (!condition)
             {
                 throw new Exception("Expected 'true'");
             }
@@ -32,10 +32,10 @@ namespace DevTools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsFalse(bool predicate)
+        public static void IsFalse(bool condition)
         {
 #if BOOL_CHECKS
-            if (predicate)
+            if (condition)
             {
                 throw new Exception("Expected 'false'");
             }
@@ -92,7 +92,7 @@ namespace DevTools
         public static void FileExists(string path) 
         {
 #if FILE_PATH_CHECKS
-            IsNotNull(path); // File.Exists only returns 'false' - no explicit throw
+            IsNotNull(path); // File.Exists only returns 'false' in case 'path' is null (no explicit throw, which is what I want)
 
             if (!File.Exists(path))
             {
@@ -118,12 +118,34 @@ namespace DevTools
         {
 #if SUBARRAY_CHECKS
             IsWithinArrayBounds(index, arrayLength);
-            IsNotSmaller<int>(numEntries, 0);
+            IsNotSmaller(numEntries, 0);
 
             if (index + numEntries > arrayLength)
             {
                 throw new IndexOutOfRangeException($"index + numEntries is { index + numEntries }, which is larger than length { arrayLength }");
             }
+#endif
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SubarraysDoNotOverlap(int firstIndex, int secondIndex, int firstNumEntries, int secondNumEntries)
+        {
+#if SUBARRAY_CHECKS
+            if (firstIndex < secondIndex)
+            {
+                if (firstIndex + firstNumEntries > secondIndex)
+                {
+                    throw new IndexOutOfRangeException($"Subarray from { firstIndex } to { firstIndex + firstNumEntries - 1} overlaps with subarray from { secondIndex } to { secondIndex + secondNumEntries - 1 }");
+                }
+            }
+            else
+            {
+                if (secondIndex + secondNumEntries > firstIndex)
+                {
+                    throw new IndexOutOfRangeException($"Subarray from { secondIndex } to { secondIndex + secondNumEntries - 1} overlaps with subarray from { firstIndex } to { firstIndex + firstNumEntries - 1 }");
+                }
+            } 
 #endif
         }
 
@@ -196,7 +218,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (value.CompareTo(limit) == -1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to not be smaller than { limit }");
+                throw new ArgumentOutOfRangeException($"{ value } was expected not to be smaller than { limit }");
             }
 #endif
         }
@@ -232,14 +254,14 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (value.CompareTo(limit) == 1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to not be greater than { limit }");
+                throw new ArgumentOutOfRangeException($"{ value } was expected not to be greater than { limit }");
             }
 #endif
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void DefinedBitShift<T>(int amount)
+        public static void IsDefinedBitShift<T>(int amount)
             where T : unmanaged
         {
 #if BIT_SHIFT_CHECKS
