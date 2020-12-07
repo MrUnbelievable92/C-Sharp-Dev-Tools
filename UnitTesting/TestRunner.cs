@@ -19,10 +19,9 @@ namespace DevTools
 
             public Reporter(bool disposeOfTests)
             {
-                dispose = true;
-
-                dispose = false;
+                dispose = disposeOfTests;
                 time = new Stopwatch();
+
 
                 if (TestRunner.tests == null)
                 {
@@ -32,6 +31,7 @@ namespace DevTools
                 {
                     TestRunner.numFailedTests = 0;
                 }
+
 
                 UnityEngine.Debug.Log($"Commencing { TestRunner.tests.Count } tests");
 
