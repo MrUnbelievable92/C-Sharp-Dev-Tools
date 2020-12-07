@@ -6,21 +6,82 @@ using System.Reflection;
 
 namespace DevTools
 {
-    public class TestRunner
+    public static class TestRunner
     {
-        private List<UnitTestData> tests;
-        private List<UnitTestData> wrongSignature;
+        private class Reporter : IDisposable
+        {
+            private Stopwatch time;
+            private bool dispose;
 
-        public int numPassedTests;
-        public int numFailedTests;
+
+            public Reporter() : this(true)
+            { }
+
+            public Reporter(bool disposeOfTests)
+            {
+                dispose = true;
+
+                dispose = false;
+                time = new Stopwatch();
+
+                if (TestRunner.tests == null)
+                {
+                    LoadTests();
+                }
+                else
+                {
+                    TestRunner.numFailedTests = 0;
+                }
+
+                UnityEngine.Debug.Log($"Commencing { TestRunner.tests.Count } tests");
+
+                time.Start();
+            }
 
 
-        public void LoadTests()
+            public void Dispose()
+            {
+                time.Stop();
+
+
+                foreach (UnitTestData test in TestRunner.tests)
+                {
+                    if (test.Result > TestResult.None)
+                    {
+                        UnityEngine.Debug.Log(((test.Result == TestResult.Passed) ? "<color=green>PASSED</color> - " : "<color=red>FAILED</color> - ") 
+                                              + test.ToString());
+                    }
+                    else continue;
+                }
+
+                UnityEngine.Debug.Log($"<color=green>{ numPassedTests } passed</color>" +
+                                      $" and <color={ ((numFailedTests == 0) ? "green" : "red") }>{ numFailedTests } failed</color> tests" +
+                                      $" in { (float)time.ElapsedMilliseconds / 1000f } seconds");
+
+                if (dispose)
+                {
+                    TestRunner.numFailedTests = 0;
+                    TestRunner.tests = null;
+                    GC.Collect();
+                }
+                else return;
+            }
+        }
+
+
+        private static List<UnitTestData> tests;
+        private static List<UnitTestData> wrongSignature;
+
+        public static int numPassedTests => tests.Count - numFailedTests;
+        public static int numFailedTests;
+
+
+        public static void LoadTests()
         {
             tests = new List<UnitTestData>();
             wrongSignature = new List<UnitTestData>();
 
-            numPassedTests = numFailedTests = 0;
+            numFailedTests = 0;
 
 
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -76,97 +137,70 @@ namespace DevTools
             {
                 UnityEngine.Debug.LogError("<color=red>WRONG METHOD SIGNATURE</color> - Methods must be static, parameterless and return a boolean, representing the test result: " + data.ToString());
             }
+
+            wrongSignature = null;
         }
 
 
-        private Stopwatch InitializeTests()
-        {
-            numFailedTests = numPassedTests = 0;
-
-            UnityEngine.Debug.Log($"Commencing { tests.Count } tests");
-
-            Stopwatch time = new Stopwatch();
-            time.Start();
-
-            return time;
-        }
-
-        private void PrintTestResults(Stopwatch time)
-        {
-            UnityEngine.Debug.Log($"<color=green>{ numPassedTests } passed</color>" +
-                                  $" and <color={ ((numFailedTests == 0) ? "green" : "red") }>{ numFailedTests } failed</color> tests" +
-                                  $" in { (float)time.ElapsedMilliseconds / 1000f } seconds");
-
-            time.Stop();
-        }
-
-
-        private void Run(int index)
+        private static void RunSingleTest(int index)
         {
             if ((bool)tests[index].Test.Method.Invoke(null, null))
             {
-                UnityEngine.Debug.Log("<color=green>PASSED</color> - " + tests[index].ToString());
-
                 tests[index].Result = TestResult.Passed;
-                numPassedTests++;
             }
             else
             {
-                UnityEngine.Debug.LogError("<color=red>FAILED</color> - " + tests[index].ToString());
-
                 tests[index].Result = TestResult.Failed;
                 numFailedTests++;
             }
         }
 
-        public void RunTests()
+        public static void RunAllTests()
         {
-            Stopwatch time = InitializeTests();
-
-            for (int i = 0; i < tests.Count; i++)
+            using (new TestRunner.Reporter())
             {
-                Run(i);
+                for (int i = 0; i < tests.Count; i++)
+                {
+                    RunSingleTest(i);
+                }
             }
-
-            PrintTestResults(time);
         }
 
-        public void RunTests(string assemblyName, params string[] categories)
+        public static void RunAllTests(string assemblyName, params string[] categories)
         {
             int firstIndex = 0;
 
-            Stopwatch time = InitializeTests();
-
-            while (tests[firstIndex].AssemblyName != assemblyName)
+            using (new TestRunner.Reporter())
             {
-                firstIndex++;
-            }
-
-            while (tests[firstIndex].AssemblyName == assemblyName)
-            {
-                bool allCategoriesPresent = true;
-
-                if (categories != null)
+                while (tests[firstIndex].AssemblyName != assemblyName)
                 {
-                    foreach (string category in categories)
+                    firstIndex++;
+                }
+
+                while (tests[firstIndex].AssemblyName == assemblyName)
+                {
+                    bool allCategoriesPresent = true;
+
+                    if (categories != null)
                     {
-                        allCategoriesPresent &= tests[firstIndex].Categories.Contains<string>(category);
+                        foreach (string category in categories)
+                        {
+                            allCategoriesPresent &= tests[firstIndex].Categories.Contains<string>(category);
+                        }
                     }
+                    else { }
+
+
+                    if (allCategoriesPresent)
+                    {
+                        RunSingleTest(firstIndex);
+                    }
+                    else { }
+
+
+                    firstIndex++;
                 }
-                else { }
-
-
-                if (allCategoriesPresent)
-                {
-                    Run(firstIndex);
-                }
-                else { }
-
-
-                firstIndex++;
             }
-
-            PrintTestResults(time);
         }
     }
 }
