@@ -22,7 +22,7 @@ namespace DevTools
 
             numPassedTests = numFailedTests = 0;
 
-            
+
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 string assemblyName = assembly.GetName().Name;
@@ -79,6 +79,28 @@ namespace DevTools
         }
 
 
+        private Stopwatch InitializeTests()
+        {
+            numFailedTests = numPassedTests = 0;
+
+            UnityEngine.Debug.Log($"Commencing { tests.Count } tests");
+
+            Stopwatch time = new Stopwatch();
+            time.Start();
+
+            return time;
+        }
+
+        private void PrintTestResults(Stopwatch time)
+        {
+            UnityEngine.Debug.Log($"<color=green>{ numPassedTests } passed</color>" +
+                                  $" and <color={ ((numFailedTests == 0) ? "green" : "red") }>{ numFailedTests } failed</color> tests" +
+                                  $" in { (float)time.ElapsedMilliseconds / 1000f } seconds");
+
+            time.Stop();
+        }
+
+
         private void Run(int index)
         {
             if ((bool)tests[index].Test.Method.Invoke(null, null))
@@ -97,29 +119,23 @@ namespace DevTools
             }
         }
 
-
         public void RunTests()
         {
-            numFailedTests = numPassedTests = 0;
-
-            UnityEngine.Debug.Log($"Commencing { tests.Count } tests");
-
-            Stopwatch time = new Stopwatch();
-            time.Start();
+            Stopwatch time = InitializeTests();
 
             for (int i = 0; i < tests.Count; i++)
             {
                 Run(i);
             }
 
-            time.Stop();
-
-            UnityEngine.Debug.Log($"<color=green>{ numPassedTests } passed</color> and <color={ ((numFailedTests == 0) ? "green" : "red") }>{ numFailedTests } failed</color> tests in { (float)time.ElapsedMilliseconds / 1000f } seconds");
+            PrintTestResults(time);
         }
 
         public void RunTests(string assemblyName, params string[] categories)
         {
             int firstIndex = 0;
+
+            Stopwatch time = InitializeTests();
 
             while (tests[firstIndex].AssemblyName != assemblyName)
             {
@@ -149,6 +165,8 @@ namespace DevTools
 
                 firstIndex++;
             }
+
+            PrintTestResults(time);
         }
     }
 }

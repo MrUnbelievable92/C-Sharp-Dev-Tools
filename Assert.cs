@@ -15,7 +15,8 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-// CONDITIONAL ATTRIBUTE DOESN'T WORK
+// CONDITIONAL ATTRIBUTE DOESN'T WORK AS EXPECTED WITH UNITY
+// strings cannot be passed as arguments if the functions are to work with Unity.Burst
 namespace DevTools
 {
     unsafe public static class Assert
@@ -106,6 +107,8 @@ namespace DevTools
         public static void IsWithinArrayBounds(int index, int arrayLength)
         {
 #if BOUNDS_CHECKS
+            IsNotSmaller(arrayLength, 0);
+
             if ((uint)index >= (uint)arrayLength)
             {
                 throw new IndexOutOfRangeException($"{ index } out of range (length { arrayLength } - 1)");
@@ -180,7 +183,7 @@ namespace DevTools
             where T : IComparable<T>
         {
 #if COMPARE_CHECKS
-            if ((value.CompareTo(min) < 0) || (0 < value.CompareTo(max)))
+            if ((value.CompareTo(min) < 0) || (value.CompareTo(max) > 0))
             {
                 throw new ArgumentOutOfRangeException($"Min: { min }, Max: { max }, Value: { value }");
             }
