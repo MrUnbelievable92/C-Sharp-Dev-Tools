@@ -119,9 +119,9 @@ namespace DevTools
                 }
 
 
-                try
+                while (Tests[firstIndex].AssemblyName == assemblyName)
                 {
-                    while (Tests[firstIndex].AssemblyName == assemblyName)
+                    try
                     {
                         bool allCategoriesPresent = true;
 
@@ -144,12 +144,12 @@ namespace DevTools
 
                         firstIndex++;
                     }
-                }
-                catch (Exception e)
-                {
-                    UnityEngine.Debug.LogError("<color=red>UNHANDLED EXCEPTION</color> - aborting tests\n" + e.Message);
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogError("<color=red>UNHANDLED EXCEPTION</color> - aborting tests\n" + e.Message);
 
-                    return;
+                        return;
+                    }
                 }
             }
         }
