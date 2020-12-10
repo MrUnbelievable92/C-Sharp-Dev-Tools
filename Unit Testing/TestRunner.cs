@@ -9,7 +9,7 @@ namespace DevTools
     {
         internal static List<UnitTestData> Tests;
 
-        internal static int NumPassedTests => Tests.Count - NumFailedTests;
+        internal static int NumPassedTests;
         internal static int NumFailedTests;
 
 
@@ -18,7 +18,7 @@ namespace DevTools
             Tests = new List<UnitTestData>();
             List<UnitTestData> wrongSignature = new List<UnitTestData>();
 
-            NumFailedTests = 0;
+            NumFailedTests = NumPassedTests = 0;
 
 
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -78,6 +78,7 @@ namespace DevTools
             if ((bool)Tests[index].Test.Method.Invoke(null, null))
             {
                 Tests[index].Result = TestResult.Passed;
+                NumPassedTests++;
             }
             else
             {
@@ -90,9 +91,18 @@ namespace DevTools
         {
             using (new TestReporter())
             {
-                for (int i = 0; i < Tests.Count; i++)
+                try
                 {
-                    RunSingleTest(i);
+                    for (int i = 0; i < Tests.Count; i++)
+                    {
+                        RunSingleTest(i);
+                    }
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogError("<color=red>UNHANDLED EXCEPTION</color> - aborting tests\n" + e.Message);
+
+                    return;
                 }
             }
         }
@@ -109,28 +119,37 @@ namespace DevTools
                 }
 
 
-                while (Tests[firstIndex].AssemblyName == assemblyName)
+                try
                 {
-                    bool allCategoriesPresent = true;
-
-                    if (categories != null)
+                    while (Tests[firstIndex].AssemblyName == assemblyName)
                     {
-                        foreach (string category in categories)
+                        bool allCategoriesPresent = true;
+
+                        if (categories != null)
                         {
-                            allCategoriesPresent &= Tests[firstIndex].Categories.Contains(category);
+                            foreach (string category in categories)
+                            {
+                                allCategoriesPresent &= Tests[firstIndex].Categories.Contains(category);
+                            }
                         }
+                        else { }
+
+
+                        if (allCategoriesPresent)
+                        {
+                            RunSingleTest(firstIndex);
+                        }
+                        else { }
+
+
+                        firstIndex++;
                     }
-                    else { }
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogError("<color=red>UNHANDLED EXCEPTION</color> - aborting tests\n" + e.Message);
 
-
-                    if (allCategoriesPresent)
-                    {
-                        RunSingleTest(firstIndex);
-                    }
-                    else { }
-
-
-                    firstIndex++;
+                    return;
                 }
             }
         }
