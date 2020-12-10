@@ -1,13 +1,12 @@
 ﻿#if UNITY_EDITOR
 
-#define BOOL_CHECKS
+#define CONDITION_CHECKS
 #define NULL_CHECKS
 #define FILE_PATH_CHECKS
 #define BOUNDS_CHECKS
 #define SUBARRAY_CHECKS
-#define EQUALITY_CHECKS
 #define COMPARE_CHECKS
-#define BIT_SHIFT_CHECKS
+#define ARITHMETIC_LOGIC_CHECKS
 
 #endif
 
@@ -21,10 +20,11 @@ namespace DevTools
 {
     unsafe public static class Assert
     {
+        #region CONDITION_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsTrue(bool condition)
         {
-#if BOOL_CHECKS
+#if CONDITION_CHECKS
             if (!condition)
             {
                 throw new Exception("Expected 'true'");
@@ -35,15 +35,17 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsFalse(bool condition)
         {
-#if BOOL_CHECKS
+#if CONDITION_CHECKS
             if (condition)
             {
                 throw new Exception("Expected 'false'");
             }
 #endif
         }
+        #endregion
 
 
+        #region NULL_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNull(object obj)
         {
@@ -87,8 +89,10 @@ namespace DevTools
             }
 #endif
         }
+        #endregion
 
 
+        #region FILE_PATH_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void FileExists(string path) 
         {
@@ -101,8 +105,10 @@ namespace DevTools
             }
 #endif
         }
+        #endregion
 
 
+        #region BOUNDS_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsWithinArrayBounds(int index, int arrayLength)
         {
@@ -115,17 +121,20 @@ namespace DevTools
             }
 #endif
         }
+        #endregion
 
+
+        #region SUBARRAY_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsValidSubarray(int index, int numEntries, int arrayLength)
+        public static void IsValidSubarray(int index, int NumEntries, int arrayLength)
         {
 #if SUBARRAY_CHECKS
             IsWithinArrayBounds(index, arrayLength);
-            IsNotSmaller(numEntries, 0);
+            IsNotSmaller(NumEntries, 0);
 
-            if (index + numEntries > arrayLength)
+            if (index + NumEntries > arrayLength)
             {
-                throw new IndexOutOfRangeException($"index + numEntries is { index + numEntries }, which is larger than length { arrayLength }");
+                throw new IndexOutOfRangeException($"index + NumEntries is { index + NumEntries }, which is larger than length { arrayLength }");
             }
 #endif
         }
@@ -151,13 +160,15 @@ namespace DevTools
             } 
 #endif
         }
+        #endregion
 
 
+        #region COMPARE_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AreEqual<T>(T a, T b)
             where T : IEquatable<T>
         {
-#if EQUALITY_CHECKS
+#if COMPARE_CHECKS
             if (!a.Equals(b))
             {
                 throw new ArgumentOutOfRangeException($"{ a } was expected to be equal to { b }");
@@ -169,7 +180,7 @@ namespace DevTools
         public static void AreNotEqual<T>(T a, T b)
             where T : IEquatable<T>
         {
-#if EQUALITY_CHECKS
+#if COMPARE_CHECKS
             if (a.Equals(b))
             {
                 throw new ArgumentOutOfRangeException($"{ a } was expected not to be equal to { b }");
@@ -177,7 +188,7 @@ namespace DevTools
 #endif
         }
 
-
+        /// <summary>    Inclusive    </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsBetween<T>(T value, T min, T max)
             where T : IComparable<T>
@@ -215,18 +226,6 @@ namespace DevTools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsNotSmaller<T>(T value, T limit)
-            where T : IComparable<T>
-        {
-#if COMPARE_CHECKS
-            if (value.CompareTo(limit) == -1)
-            {
-                throw new ArgumentOutOfRangeException($"{ value } was expected not to be smaller than { limit }");
-            }
-#endif
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsGreaterOrEqual<T>(T value, T limit)
             where T : IComparable<T>
         {
@@ -251,6 +250,18 @@ namespace DevTools
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNotSmaller<T>(T value, T limit)
+            where T : IComparable<T>
+        {
+#if COMPARE_CHECKS
+            if (value.CompareTo(limit) == -1)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected not to be smaller than { limit }");
+            }
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotGreater<T>(T value, T limit)
             where T : IComparable<T>
         {
@@ -261,18 +272,21 @@ namespace DevTools
             }
 #endif
         }
+        #endregion
 
 
+        #region ARITHMETIC_LOGIC_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsDefinedBitShift<T>(int amount)
             where T : unmanaged
         {
-#if BIT_SHIFT_CHECKS
+#if ARITHMETIC_LOGIC_CHECKS
             if ((uint)amount >= (uint)sizeof(T) * 8u)
             {
                 throw new ArgumentOutOfRangeException($"Shifting a { typeof(T) } by { amount } results in undefined behavior");
             }
 #endif
         }
+        #endregion
     }
 }

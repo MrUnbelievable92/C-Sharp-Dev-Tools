@@ -63,7 +63,6 @@ namespace DevTools
         internal string AssemblyName;
         internal string[] Categories;
 
-
         public override string ToString()
         {
             string final = AssemblyName + " ";
