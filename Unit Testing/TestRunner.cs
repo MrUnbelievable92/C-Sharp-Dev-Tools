@@ -73,45 +73,53 @@ namespace DevTools
         }
 
 
-        private static void RunSingleTest(int index)
-        {
-            if ((bool)Tests[index].Test.Method.Invoke(null, null))
+        private static bool RunSingleTest(int index, TestReporter reporter)
+        { 
+            try
             {
-                Tests[index].Result = TestResult.Passed;
-                NumPassedTests++;
+                if ((bool)Tests[index].Test.Method.Invoke(null, null))
+                {
+                    Tests[index].Result = TestResult.Passed;
+                    NumPassedTests++;
+                }
+                else
+                {
+                    Tests[index].Result = TestResult.Failed;
+                    NumFailedTests++;
+                }
+
+                return true;
             }
-            else
+            catch (Exception e)
             {
-                Tests[index].Result = TestResult.Failed;
-                NumFailedTests++;
+                UnityEngine.Debug.LogError($"<color=red>UNHANDLED EXCEPTION</color>\n{ e.ToString() + " " + e.InnerException.Message }");
+
+                reporter.exception = true;
+
+                return false;
             }
         }
 
         public static void RunAllTests()
         {
-            using (new TestReporter())
+            using (TestReporter reporter = new TestReporter())
             {
-                try
+                for (int i = 0; i < Tests.Count; i++)
                 {
-                    for (int i = 0; i < Tests.Count; i++)
+                    if(!RunSingleTest(i, reporter))
                     {
-                        RunSingleTest(i);
+                        return;
                     }
-                }
-                catch (Exception e)
-                {
-                    UnityEngine.Debug.LogError("<color=red>UNHANDLED EXCEPTION</color> - aborting tests\n" + e.Message);
-
-                    return;
                 }
             }
         }
 
         public static void RunAllTests(string assemblyName, params string[] categories)
         {
-            using (new TestReporter())
+            using (TestReporter reporter = new TestReporter())
             {
                 int firstIndex = 0;
+
 
                 while (Tests[firstIndex].AssemblyName != assemblyName)
                 {
@@ -121,35 +129,27 @@ namespace DevTools
 
                 while (Tests[firstIndex].AssemblyName == assemblyName)
                 {
-                    try
+                    bool allCategoriesPresent = true;
+
+                    if (categories != null)
                     {
-                        bool allCategoriesPresent = true;
-
-                        if (categories != null)
+                        foreach (string category in categories)
                         {
-                            foreach (string category in categories)
-                            {
-                                allCategoriesPresent &= Tests[firstIndex].Categories.Contains(category);
-                            }
+                            allCategoriesPresent &= Tests[firstIndex].Categories.Contains(category);
                         }
-                        else { }
-
-
-                        if (allCategoriesPresent)
-                        {
-                            RunSingleTest(firstIndex);
-                        }
-                        else { }
-
-
-                        firstIndex++;
                     }
-                    catch (Exception e)
+                    else { }
+
+                    
+                    if (allCategoriesPresent)
                     {
-                        UnityEngine.Debug.LogError("<color=red>UNHANDLED EXCEPTION</color> - aborting tests\n" + e.Message);
-
-                        return;
+                        if (RunSingleTest(firstIndex, reporter))
+                        {
+                            firstIndex++;
+                        }
+                        else return;
                     }
+                    else { }
                 }
             }
         }

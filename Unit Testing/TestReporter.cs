@@ -7,6 +7,7 @@ namespace DevTools
     {
         private Stopwatch time;
         private bool dispose;
+        public bool exception;
 
 
         public TestReporter() : this(true)
@@ -24,7 +25,7 @@ namespace DevTools
             }
             else
             {
-                TestRunner.NumFailedTests = 0;
+                TestRunner.NumFailedTests = TestRunner.NumPassedTests = 0;
             }
 
 
@@ -39,7 +40,7 @@ namespace DevTools
             time.Stop();
 
 
-            if (TestRunner.Tests.Count > 0)     // else the final (nonsensical) result would be logged to the console
+            if (!exception && TestRunner.Tests.Count > 0)     // else the final (nonsensical) result would be logged to the console
             {
                 foreach (UnitTestData test in TestRunner.Tests)
                 {
@@ -75,7 +76,7 @@ namespace DevTools
 
             if (dispose)
             {
-                TestRunner.NumFailedTests = 0;
+                TestRunner.NumFailedTests = TestRunner.NumPassedTests = 0;
                 TestRunner.Tests = null;
                 GC.Collect();
             }
