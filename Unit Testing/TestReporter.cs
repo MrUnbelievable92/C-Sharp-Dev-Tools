@@ -7,7 +7,8 @@ namespace DevTools
     {
         private Stopwatch time;
         private bool dispose;
-        public bool exception;
+
+        internal bool Exception;
 
 
         public TestReporter() : this(true)
@@ -40,7 +41,7 @@ namespace DevTools
             time.Stop();
 
 
-            if (!exception && TestRunner.Tests.Count > 0)     // else the final (nonsensical) result would be logged to the console
+            if (!Exception & TestRunner.Tests.Count > 0)     // else the final (nonsensical) result would be logged to the console
             {
                 foreach (UnitTestData test in TestRunner.Tests)
                 {

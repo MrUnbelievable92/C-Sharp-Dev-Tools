@@ -27,7 +27,7 @@ namespace DevTools
 #if CONDITION_CHECKS
             if (!condition)
             {
-                throw new Exception("Expected 'true'");
+                throw new Exception("Expected 'true'.");
             }
 #endif
         }
@@ -38,7 +38,7 @@ namespace DevTools
 #if CONDITION_CHECKS
             if (condition)
             {
-                throw new Exception("Expected 'false'");
+                throw new Exception("Expected 'false'.");
             }
 #endif
         }
@@ -52,7 +52,7 @@ namespace DevTools
 #if NULL_CHECKS
             if (obj != null)
             {
-                throw new InvalidDataException("Expected null"); ;
+                throw new InvalidDataException("Expected null."); ;
             }
 #endif
         }
@@ -63,7 +63,7 @@ namespace DevTools
 #if NULL_CHECKS
             if (ptr != null)
             {
-                throw new InvalidDataException("Expected null"); ;
+                throw new InvalidDataException("Expected null."); ;
             }
 #endif
         }
@@ -74,7 +74,7 @@ namespace DevTools
 #if NULL_CHECKS
             if (obj == null)
             {
-                throw new NullReferenceException("Expected not-null"); ;
+                throw new NullReferenceException("Expected not-null."); ;
             }
 #endif
         }
@@ -85,7 +85,7 @@ namespace DevTools
 #if NULL_CHECKS
             if (ptr == null)
             {
-                throw new NullReferenceException("Expected not-null"); ;
+                throw new NullReferenceException("Expected not-null."); ;
             }
 #endif
         }
@@ -117,7 +117,7 @@ namespace DevTools
 
             if ((uint)index >= (uint)arrayLength)
             {
-                throw new IndexOutOfRangeException($"{ index } out of range (length { arrayLength } - 1)");
+                throw new IndexOutOfRangeException($"{ index } out of range (length { arrayLength } - 1).");
             }
 #endif
         }
@@ -134,7 +134,7 @@ namespace DevTools
 
             if (index + NumEntries > arrayLength)
             {
-                throw new IndexOutOfRangeException($"index + NumEntries is { index + NumEntries }, which is larger than length { arrayLength }");
+                throw new IndexOutOfRangeException($"index + NumEntries is { index + NumEntries }, which is larger than length { arrayLength }.");
             }
 #endif
         }
@@ -148,14 +148,14 @@ namespace DevTools
             {
                 if (firstIndex + firstNumEntries > secondIndex)
                 {
-                    throw new IndexOutOfRangeException($"Subarray from { firstIndex } to { firstIndex + firstNumEntries - 1} overlaps with subarray from { secondIndex } to { secondIndex + secondNumEntries - 1 }");
+                    throw new IndexOutOfRangeException($"Subarray from { firstIndex } to { firstIndex + firstNumEntries - 1} overlaps with subarray from { secondIndex } to { secondIndex + secondNumEntries - 1 }.");
                 }
             }
             else
             {
                 if (secondIndex + secondNumEntries > firstIndex)
                 {
-                    throw new IndexOutOfRangeException($"Subarray from { secondIndex } to { secondIndex + secondNumEntries - 1} overlaps with subarray from { firstIndex } to { firstIndex + firstNumEntries - 1 }");
+                    throw new IndexOutOfRangeException($"Subarray from { secondIndex } to { secondIndex + secondNumEntries - 1} overlaps with subarray from { firstIndex } to { firstIndex + firstNumEntries - 1 }.");
                 }
             } 
 #endif
@@ -165,13 +165,25 @@ namespace DevTools
 
         #region COMPARE_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsSafeBoolean(bool x)
+        {
+#if COMPARE_CHECKS
+            if (*(byte*)&x > 1)
+            {
+                throw new InvalidDataException($"The integral value of the bool x is { *(byte*)&x } which can lead to undefined behavior.");
+            }
+#endif
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AreEqual<T>(T a, T b)
             where T : IEquatable<T>
         {
 #if COMPARE_CHECKS
             if (!a.Equals(b))
             {
-                throw new ArgumentOutOfRangeException($"{ a } was expected to be equal to { b }");
+                throw new ArgumentOutOfRangeException($"{ a } was expected to be equal to { b }.");
             }
 #endif
         }
@@ -183,7 +195,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (a.Equals(b))
             {
-                throw new ArgumentOutOfRangeException($"{ a } was expected not to be equal to { b }");
+                throw new ArgumentOutOfRangeException($"{ a } was expected not to be equal to { b }.");
             }
 #endif
         }
@@ -196,7 +208,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if ((value.CompareTo(min) < 0) || (value.CompareTo(max) > 0))
             {
-                throw new ArgumentOutOfRangeException($"Min: { min }, Max: { max }, Value: { value }");
+                throw new ArgumentOutOfRangeException($"Min: { min }, Max: { max }, Value: { value }.");
             }
 #endif
         }
@@ -208,7 +220,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (value.CompareTo(limit) == 1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be smaller than or equal to { limit }");
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be smaller than or equal to { limit }.");
             }
 #endif
         }
@@ -220,7 +232,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (value.CompareTo(limit) != -1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be smaller than { limit }");
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be smaller than { limit }.");
             }
 #endif
         }
@@ -232,7 +244,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (value.CompareTo(limit) == -1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than or equal to { limit }");
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than or equal to { limit }.");
             }
 #endif
         }
@@ -244,7 +256,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (value.CompareTo(limit) != 1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than { limit }");
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than { limit }.");
             }
 #endif
         }
@@ -256,7 +268,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (value.CompareTo(limit) == -1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected not to be smaller than { limit }");
+                throw new ArgumentOutOfRangeException($"{ value } was expected not to be smaller than { limit }.");
             }
 #endif
         }
@@ -268,7 +280,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (value.CompareTo(limit) == 1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected not to be greater than { limit }");
+                throw new ArgumentOutOfRangeException($"{ value } was expected not to be greater than { limit }.");
             }
 #endif
         }
@@ -283,7 +295,7 @@ namespace DevTools
 #if ARITHMETIC_LOGIC_CHECKS
             if ((uint)amount >= (uint)sizeof(T) * 8u)
             {
-                throw new ArgumentOutOfRangeException($"Shifting a { typeof(T) } by { amount } results in undefined behavior");
+                throw new ArgumentOutOfRangeException($"Shifting a { typeof(T) } by { amount } results in undefined behavior.");
             }
 #endif
         }

@@ -73,7 +73,7 @@ namespace DevTools
         }
 
 
-        private static bool RunSingleTest(int index, TestReporter reporter)
+        private static bool TryRunSingleTest(int index, TestReporter reporter)
         { 
             try
             {
@@ -92,9 +92,9 @@ namespace DevTools
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError($"<color=red>UNHANDLED EXCEPTION</color>\n{ e.ToString() + " " + e.InnerException.Message }");
+                UnityEngine.Debug.LogError($"<color=red>UNHANDLED EXCEPTION - ABORTING FURTHER TESTS</color>\n<color=orange>{ e.ToString() + " " + e.InnerException.Message }</color>");
 
-                reporter.exception = true;
+                reporter.Exception = true;
 
                 return false;
             }
@@ -106,7 +106,7 @@ namespace DevTools
             {
                 for (int i = 0; i < Tests.Count; i++)
                 {
-                    if(!RunSingleTest(i, reporter))
+                    if(!TryRunSingleTest(i, reporter))
                     {
                         return;
                     }
@@ -118,16 +118,16 @@ namespace DevTools
         {
             using (TestReporter reporter = new TestReporter())
             {
-                int firstIndex = 0;
+                int index = 0;
 
 
-                while (Tests[firstIndex].AssemblyName != assemblyName)
+                while (Tests[index].AssemblyName != assemblyName)
                 {
-                    firstIndex++;
+                    index++;
                 }
 
 
-                while (Tests[firstIndex].AssemblyName == assemblyName)
+                while (Tests[index].AssemblyName == assemblyName)
                 {
                     bool allCategoriesPresent = true;
 
@@ -135,21 +135,21 @@ namespace DevTools
                     {
                         foreach (string category in categories)
                         {
-                            allCategoriesPresent &= Tests[firstIndex].Categories.Contains(category);
+                            allCategoriesPresent &= Tests[index].Categories.Contains(category);
                         }
                     }
                     else { }
 
-                    
+
                     if (allCategoriesPresent)
                     {
-                        if (RunSingleTest(firstIndex, reporter))
+                        if (TryRunSingleTest(index, reporter))
                         {
-                            firstIndex++;
+                            index++;
                         }
                         else return;
                     }
-                    else { }
+                    else continue;
                 }
             }
         }
