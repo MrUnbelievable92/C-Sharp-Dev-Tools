@@ -3,6 +3,8 @@
   "displayName": "DevTools",
   "version": "0.1.0.2",
   "unity": "2018.4",
+  "dependencies": {
+  },
   "description": "DevTools is a small framework for Unity with assertions for defensive programming and simple unit testing.",
    "keywords": [
     "Unity",
