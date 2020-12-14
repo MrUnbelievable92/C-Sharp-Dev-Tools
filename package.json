@@ -1,0 +1,20 @@
+{
+  "name": "DevTools",
+  "displayName": "DevTools",
+  "version": "0.1.0.2",
+  "unity": "2018.4",
+  "description": "DevTools is a small framework for Unity with assertions for defensive programming and simple unit testing.",
+   "keywords": [
+    "Unity",
+	"Defensinve Programming",
+    "Unity Testing"
+  ],
+  "author": {
+    "name": "Maximilian Kalimon",
+    "email": "mkalimon@gmx.de"
+  }
+  "repository": {
+    "url": "https://github.com/MrUnbelievable92/Unity-DevTools",
+    "type": "git"
+  }
+}
