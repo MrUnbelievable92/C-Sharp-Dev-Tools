@@ -1,13 +1,11 @@
 {
-  "name": "DevTools",
-  "displayName": "DevTools",
+  "name": "MaxMath",
+  "displayName": "MaxMath",
   "version": "0.1.0.2",
   "unity": "2018.4",
   "description": "DevTools is a small framework for Unity with assertions for defensive programming and simple unit testing.",
    "keywords": [
-    "Unity",
-	"Defensive Programming",
-    "Unity Testing"
+    "Unity"
   ],
   "author": {
     "name": "Maximilian Kalimon",
