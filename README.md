@@ -1,2 +1,2 @@
 # Unity-DevTools
-DevTools is a framework with Assertions for defensive programming and unit testing
+DevTools is a framework with assertions for defensive programming and unit testing
