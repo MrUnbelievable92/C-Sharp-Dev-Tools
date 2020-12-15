@@ -1,2 +1,2 @@
 # Unity-DevTools
-DevTools is a small framework for Unity with assertions for defensive programming and simple unit testing.
+DevTools is a small framework for development Unity with assertions during testing and logging tools.

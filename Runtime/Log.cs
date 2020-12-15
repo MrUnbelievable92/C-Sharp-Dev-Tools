@@ -24,6 +24,7 @@ namespace DevTools
             "F"
         };
 
+
         public static string Bits(sbyte value, bool spaces = true)
         {
             char[] result = new char[8];
