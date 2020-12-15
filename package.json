@@ -3,7 +3,7 @@
   "displayName": "DevTools",
   "version": "1.0.2",
   "unity": "2018.4",
-  "description": "DevTools is a small framework for development Unity with assertions during testing and logging tools..",
+  "description": "DevTools is a small framework for development Unity with assertions during testing and logging tools.",
    "keywords": [
     "Unity"
   ],
