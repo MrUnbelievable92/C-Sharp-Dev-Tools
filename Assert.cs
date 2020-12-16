@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+﻿#if DEBUG
 
 #define CONDITION_CHECKS
 #define NULL_CHECKS
@@ -165,18 +165,6 @@ namespace DevTools
 
         #region COMPARE_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsSafeBoolean(bool x)
-        {
-#if COMPARE_CHECKS
-            if (*(byte*)&x > 1)
-            {
-                throw new InvalidDataException($"The integral value of the bool x is { *(byte*)&x } which can lead to undefined behavior.");
-            }
-#endif
-        }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AreEqual<T>(T a, T b)
             where T : IEquatable<T>
         {
@@ -289,6 +277,18 @@ namespace DevTools
 
         #region ARITHMETIC_LOGIC_CHECKS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsSafeBoolean(bool x)
+        {
+#if COMPARE_CHECKS
+            if (*(byte*)&x > 1)
+            {
+                throw new InvalidDataException($"The integral value of the bool x is { *(byte*)&x } which can lead to undefined behavior.");
+            }
+#endif
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsDefinedBitShift<T>(int amount)
             where T : unmanaged
         {
@@ -298,6 +298,13 @@ namespace DevTools
                 throw new ArgumentOutOfRangeException($"Shifting a { typeof(T) } by { amount } results in undefined behavior.");
             }
 #endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsDefinedBitShift<T>(uint amount)
+            where T : unmanaged
+        {
+            IsDefinedBitShift<T>((int)amount);
         }
         #endregion
     }
