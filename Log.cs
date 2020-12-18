@@ -1,38 +1,20 @@
 ﻿namespace DevTools
 {
-    public static class Log
+    unsafe public static class Log
     {
-        private static char[] HexValues => new char[]
-        {
-            '0',
-            '1',
-            '2',
-            '3',
-            '4',
-            '5',
-            '6',
-            '7',
-            '8',
-            '9',
-            'A',
-            'B',
-            'C',
-            'D',
-            'E',
-            'F'
-        };
+        private static char[] HexValues => new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 
         public static string Bits(sbyte value, bool spaces = true)
         {
-            char[] result = new char[8];
+            char* result = stackalloc char[8];
 
             for (int i = 0; i < 8; i++)
             {
                 result[i] = (char)((((uint)value >> 7 - i) & 1) + 48);
             }
 
-            return spaces ? new string(result).Insert(4, " ") : new string(result);
+            return spaces ? new string(result, 0, 8).Insert(4, " ") : new string(result, 0, 8);
         }
         public static string Bits(short value, bool spaces = true)
         {
@@ -52,13 +34,13 @@
         public static string Bits(uint value, bool spaces = true) => Bits((int)value, spaces);
         public static string Bits(ulong value, bool spaces = true) => Bits((long)value, spaces);
 
-        unsafe public static string Bits<T>(T value, bool spaces = true)
+        public static string Bits<T>(T value, bool spaces = true)
             where T : unmanaged
         {
             byte* address = (byte*)&value;
             int sizeInBytes = sizeof(T);
 
-            string result = "";
+            string result = string.Empty;
 
             while (sizeInBytes != 0)
             {
@@ -70,12 +52,12 @@
 
             return result;
         }
-        unsafe public static string Bits(void* ptr, int bytes, bool spaces = true)
+        public static string Bits(void* ptr, int bytes, bool spaces = true)
         {
 Assert.IsNotNull(ptr);
 
             byte* address = (byte*)ptr;
-            string result = "";
+            string result = string.Empty;
 
             while (bytes != 0)
             {
@@ -111,13 +93,13 @@ Assert.IsNotNull(ptr);
         public static string Hex(uint value, bool spaces = true) => Hex((int)value, spaces);
         public static string Hex(ulong value, bool spaces = true) => Hex((long)value, spaces);
 
-        unsafe public static string Hex<T>(T value, bool spaces = true)
+        public static string Hex<T>(T value, bool spaces = true)
             where T : unmanaged
         {
             byte* address = (byte*)&value;
             int iterations = 0;
 
-            string result = "";
+            string result = string.Empty;
 
             while (iterations != sizeof(T))
             {
@@ -129,13 +111,13 @@ Assert.IsNotNull(ptr);
 
             return result;
         }
-        unsafe public static string Hex(void* ptr, int bytes, bool spaces = true)
+        public static string Hex(void* ptr, int bytes, bool spaces = true)
         {
 Assert.IsNotNull(ptr);
 
             byte* address = (byte*)ptr;
             int iterations = 0;
-            string result = "";
+            string result = string.Empty;
 
             while (iterations != bytes)
             {
