@@ -11,22 +11,22 @@
 
             for (int i = 0; i < 8; i++)
             {
-                result[i] = (char)((((uint)value >> 7 - i) & 1) + 48);
+                result[i] = (char)((((uint)value >> (7 - i)) & 1) + 48);
             }
 
             return spaces ? new string(result, 0, 8).Insert(4, " ") : new string(result, 0, 8);
         }
         public static string Bits(short value, bool spaces = true)
         {
-            return Bits((sbyte)((uint)value >> 8), spaces) + (spaces ? " " : "") + Bits((sbyte)value, spaces);
+            return Bits((sbyte)((uint)value >> 8), spaces) + (spaces ? " " : string.Empty) + Bits((sbyte)value, spaces);
         }
         public static string Bits(int value, bool spaces = true)
         {
-            return Bits((short)((uint)value >> 16), spaces) + (spaces ? " " : "") + Bits((short)value, spaces);
+            return Bits((short)((uint)value >> 16), spaces) + (spaces ? " " : string.Empty) + Bits((short)value, spaces);
         }
         public static string Bits(long value, bool spaces = true)
         {
-            return Bits((uint)((ulong)value >> 32), spaces) + (spaces ? " " : "") + Bits((uint)value, spaces);
+            return Bits((uint)((ulong)value >> 32), spaces) + (spaces ? " " : string.Empty) + Bits((uint)value, spaces);
         }
 
         public static string Bits(byte value, bool spaces = true) => Bits((sbyte)value, spaces);
@@ -44,7 +44,7 @@
 
             while (sizeInBytes != 0)
             {
-                result = result.Insert(0, Bits(*address, spaces) + (spaces ? " " : ""));
+                result = result.Insert(0, Bits(*address, spaces) + (spaces ? " " : string.Empty));
 
                 address++;
                 sizeInBytes--;
@@ -55,13 +55,14 @@
         public static string Bits(void* ptr, int bytes, bool spaces = true)
         {
 Assert.IsNotNull(ptr);
+Assert.IsGreater(bytes, -1);
 
             byte* address = (byte*)ptr;
             string result = string.Empty;
 
             while (bytes != 0)
             {
-                result = result.Insert(0, Bits(*address, spaces) + (spaces ? " " : ""));
+                result = result.Insert(0, Bits(*address, spaces) + (spaces ? " " : string.Empty));
 
                 address++;
                 bytes--;
@@ -81,11 +82,11 @@ Assert.IsNotNull(ptr);
         }
         public static string Hex(int value, bool spaces = true)
         {
-            return Hex((ushort)((uint)value >> 16)) + (spaces ? " " : "") + Hex((ushort)(value & ushort.MaxValue));
+            return Hex((ushort)((uint)value >> 16)) + (spaces ? " " : string.Empty) + Hex((ushort)(value & ushort.MaxValue));
         }
         public static string Hex(long value, bool spaces = true)
         {
-            return Hex((uint)((ulong)value >> 32), spaces) + (spaces ? " " : "") + Hex((uint)(value & uint.MaxValue), spaces);
+            return Hex((uint)((ulong)value >> 32), spaces) + (spaces ? " " : string.Empty) + Hex((uint)(value & uint.MaxValue), spaces);
         }
 
         public static string Hex(byte value) => Hex((sbyte)value);
@@ -103,7 +104,7 @@ Assert.IsNotNull(ptr);
 
             while (iterations != sizeof(T))
             {
-                result = result.Insert(0, Hex(*address) + ((spaces && (iterations != 0) && (iterations % 2 == 0)) ? " " : ""));
+                result = result.Insert(0, Hex(*address) + ((spaces && (iterations != 0) && (iterations % 2 == 0)) ? " " : string.Empty));
 
                 address++;
                 iterations++;
@@ -114,6 +115,7 @@ Assert.IsNotNull(ptr);
         public static string Hex(void* ptr, int bytes, bool spaces = true)
         {
 Assert.IsNotNull(ptr);
+Assert.IsGreater(bytes, -1);
 
             byte* address = (byte*)ptr;
             int iterations = 0;
@@ -121,7 +123,7 @@ Assert.IsNotNull(ptr);
 
             while (iterations != bytes)
             {
-                result = result.Insert(0, Hex(*address) + ((spaces && (iterations != 0) && (iterations % 2 == 0)) ? " " : ""));
+                result = result.Insert(0, Hex(*address) + ((spaces && (iterations != 0) && (iterations % 2 == 0)) ? " " : string.Empty));
                 
                 address++;
                 iterations++;

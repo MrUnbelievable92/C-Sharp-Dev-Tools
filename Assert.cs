@@ -1,4 +1,4 @@
-﻿#if DEBUG
+﻿#if !DEBUG
 
 #define CONDITION_CHECKS
 #define NULL_CHECKS
@@ -282,7 +282,7 @@ namespace DevTools
 #if COMPARE_CHECKS
             if (*(byte*)&x > 1)
             {
-                throw new InvalidDataException($"The integral value of the bool x is { *(byte*)&x } which can lead to undefined behavior.");
+                throw new InvalidDataException($"The numerical value of the bool { nameof(x) } is { *(byte*)&x } which can lead to undefined behavior.");
             }
 #endif
         }
