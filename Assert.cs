@@ -1,4 +1,4 @@
-﻿#if !DEBUG
+﻿#if DEBUG
 
 #define CONDITION_CHECKS
 #define NULL_CHECKS
