@@ -1,2 +1,2 @@
 # DevTools
-DevTools is a small framework for defensive development with assertions and logging tools.
+DevTools is a small framework for defensive development with conditionally compiled assertions and logging tools.
