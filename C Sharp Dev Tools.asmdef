@@ -1,0 +1,7 @@
+{
+    "name": "CSharpDevTools",
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "autoReferenced": true,
+    "noEngineReferences": false
+}

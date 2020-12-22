@@ -1,15 +1,15 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("DevTools")]
+[assembly: AssemblyTitle("C Sharp Dev Tools")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("DevTools")]
-[assembly: AssemblyCopyright("Copyright ©  2020")]
+[assembly: AssemblyProduct("C Sharp Dev Tools")]
+[assembly: AssemblyCopyright("Copyright � 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("e4551e22-d64f-4859-ab38-d85a5216a4a1")]
+[assembly: Guid("468e6d94-5fed-477d-8823-a81958b82a8a")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -30,3 +30,4 @@ using System.Runtime.InteropServices;
 //
 [assembly: AssemblyVersion("1.0.4")]
 [assembly: AssemblyFileVersion("1.0.4")]
+

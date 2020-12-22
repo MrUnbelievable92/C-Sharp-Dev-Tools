@@ -1,9 +1,9 @@
 {
-  "name": "devtools",
-  "displayName": "DevTools",
+  "name": "csharpdevtools",
+  "displayName": "C Sharp Dev Tools",
   "version": "1.0.4",
   "unity": "2018.4",
-  "description": "DevTools is a small framework for defensive development with assertions and logging tools.",
+  "description": "C Sharp Dev Tools is a small framework for defensive development with conditionally compiled assertions and logging tools.",
    "keywords": [
     "Unity"
   ],
@@ -12,7 +12,7 @@
     "email": "mkalimon@gmx.de"
   },
   "repository": {
-    "url": "https://github.com/MrUnbelievable92/Unity-DevTools",
+    "url": "https://github.com/MrUnbelievable92/C-Sharp-Dev-Tools",
     "type": "git"
   }
 }
