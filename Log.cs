@@ -20,19 +20,7 @@ namespace DevTools
         public static string Bits<T>(T value, bool spaces = true)
             where T : unmanaged
         {
-            byte* address = (byte*)&value;
-            int sizeInBytes = sizeof(T);
-            string result = string.Empty;
-
-            while (sizeInBytes != 0)
-            {
-                result = result.Insert(0, Bits(*address, spaces) + (spaces ? " " : string.Empty));
-
-                address++;
-                sizeInBytes--;
-            }
-
-            return result;
+            return Bits(&value, sizeof(T), spaces);
         }
 
         public static string Bits(void* ptr, int bytes, bool spaces = true)
@@ -63,19 +51,7 @@ Assert.IsGreater(bytes, -1);
         public static string Hex<T>(T value, bool spaces = true)
             where T : unmanaged
         {
-            byte* address = (byte*)&value;
-            int iterations = 0;
-            string result = string.Empty;
-
-            while (iterations != sizeof(T))
-            {
-                result = result.Insert(0, Hex(*address) + ((spaces && (iterations != 0) && (iterations % 2 == 0)) ? " " : string.Empty));
-
-                address++;
-                iterations++;
-            }
-
-            return result;
+            return Hex(&value, sizeof(T), spaces);
         }
 
         public static string Hex(void* ptr, int bytes, bool spaces = true)
