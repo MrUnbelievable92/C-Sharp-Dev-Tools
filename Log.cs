@@ -57,7 +57,7 @@ Assert.IsGreater(bytes, -1);
 
         public static string Hex(byte value)
         {
-            return HexValues[(uint)(byte)value >> 4].ToString() + HexValues[value & 15].ToString();
+            return HexValues[value >> 4].ToString() + HexValues[value & 15].ToString();
         }
 
         public static string Hex<T>(T value, bool spaces = true)
