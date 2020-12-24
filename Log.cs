@@ -1,4 +1,4 @@
-namespace DevTools
+﻿namespace DevTools
 {
     unsafe public static class Log
     {
@@ -26,7 +26,7 @@ namespace DevTools
         public static string Bits(void* ptr, int bytes, bool spaces = true)
         {
 Assert.IsNotNull(ptr);
-Assert.IsGreater(bytes, -1);
+Assert.IsNonNegative(bytes);
 
             byte* address = (byte*)ptr;
             string result = string.Empty;
@@ -45,7 +45,7 @@ Assert.IsGreater(bytes, -1);
 
         public static string Hex(byte value)
         {
-            return HexValues[value >> 4].ToString() + HexValues[value & 15].ToString();
+            return HexValues[value >> 4].ToString() + HexValues[value & 0b1111].ToString();
         }
 
         public static string Hex<T>(T value, bool spaces = true)
@@ -57,7 +57,7 @@ Assert.IsGreater(bytes, -1);
         public static string Hex(void* ptr, int bytes, bool spaces = true)
         {
 Assert.IsNotNull(ptr);
-Assert.IsGreater(bytes, -1);
+Assert.IsNonNegative(bytes);
 
             byte* address = (byte*)ptr;
             int iterations = 0;

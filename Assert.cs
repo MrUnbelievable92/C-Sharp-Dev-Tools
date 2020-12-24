@@ -113,11 +113,11 @@ namespace DevTools
         public static void IsWithinArrayBounds(int index, int arrayLength)
         {
 #if BOUNDS_CHECKS
-            IsNotSmaller(arrayLength, 0);
+            IsNonNegative(arrayLength);
 
             if ((uint)index >= (uint)arrayLength)
             {
-                throw new IndexOutOfRangeException($"{ index } out of range (length { arrayLength } - 1).");
+                throw new IndexOutOfRangeException($"{ index } is out of range (length { arrayLength } - 1).");
             }
 #endif
         }
@@ -130,11 +130,11 @@ namespace DevTools
         {
 #if SUBARRAY_CHECKS
             IsWithinArrayBounds(index, arrayLength);
-            IsNotSmaller(NumEntries, 0);
+            IsNonNegative(NumEntries);
 
             if (index + NumEntries > arrayLength)
             {
-                throw new IndexOutOfRangeException($"index + NumEntries is { index + NumEntries }, which is larger than length { arrayLength }.");
+                throw new IndexOutOfRangeException($"{ nameof(index) } + { nameof(NumEntries) } is { index + NumEntries }, which is larger than length { arrayLength }.");
             }
 #endif
         }
@@ -164,6 +164,197 @@ namespace DevTools
 
 
         #region COMPARE_CHECKS
+        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsPositive(long value)
+        {
+#if COMPARE_CHECKS
+            if (value <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
+            }
+#endif
+        }
+
+        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsPositive(float value)
+        {
+
+#if COMPARE_CHECKS
+            if (value <= 0f)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
+            }
+#endif
+        }
+
+        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsPositive(double value)
+        {
+
+#if COMPARE_CHECKS
+            if (value <= 0d)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
+            }
+#endif
+        }
+
+        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsPositive(decimal value)
+        {
+#if COMPARE_CHECKS
+            if (value <= 0m)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
+            }
+#endif
+        }
+
+        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNegative(long value)
+        {
+#if COMPARE_CHECKS
+            if (value >= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
+            }
+#endif
+        }
+
+        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNegative(float value)
+        {
+
+#if COMPARE_CHECKS
+            if (value <= 0f)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
+            }
+#endif
+        }
+
+        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNegative(double value)
+        {
+
+#if COMPARE_CHECKS
+            if (value <= 0d)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
+            }
+#endif
+        }
+
+        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNegative(decimal value)
+        {
+#if COMPARE_CHECKS
+            if (value <= 0m)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
+            }
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNonNegative(long value)
+        {
+#if COMPARE_CHECKS
+            if (value < 0)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
+            }
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNonNegative(float value)
+        {
+
+#if COMPARE_CHECKS
+            if (value < 0f)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
+            }
+#endif
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNonNegative(double value)
+        {
+
+#if COMPARE_CHECKS
+            if (value < 0d)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
+            }
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNonNegative(decimal value)
+        {
+#if COMPARE_CHECKS
+            if (value < 0m)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
+            }
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNotPositive(long value)
+        {
+#if COMPARE_CHECKS
+            if (value > 0)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
+            }
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNotPositive(float value)
+        {
+
+#if COMPARE_CHECKS
+            if (value > 0f)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
+            }
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNotPositive(double value)
+        {
+
+#if COMPARE_CHECKS
+            if (value > 0d)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
+            }
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsNotPositive(decimal value)
+        {
+#if COMPARE_CHECKS
+            if (value > 0m)
+            {
+                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
+            }
+#endif
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AreEqual<T>(T a, T b)
             where T : IEquatable<T>

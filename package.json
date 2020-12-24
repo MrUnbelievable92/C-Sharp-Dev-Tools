@@ -1,12 +1,8 @@
 {
   "name": "csharpdevtools",
   "displayName": "C Sharp Dev Tools",
-  "version": "1.0.4",
-  "unity": "2018.4",
+  "version": "1.0.5",
   "description": "C Sharp Dev Tools is a small framework for defensive development with conditionally compiled assertions and logging tools.",
-   "keywords": [
-    "Unity"
-  ],
   "author": {
     "name": "Maximilian Kalimon",
     "email": "mkalimon@gmx.de"
