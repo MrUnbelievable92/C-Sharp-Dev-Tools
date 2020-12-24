@@ -1,4 +1,4 @@
-﻿#if DEBUG
+#if DEBUG
 
 #define CONDITION_CHECKS
 #define NULL_CHECKS
@@ -180,7 +180,6 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsPositive(float value)
         {
-
 #if COMPARE_CHECKS
             if (value <= 0f)
             {
@@ -193,7 +192,6 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsPositive(double value)
         {
-
 #if COMPARE_CHECKS
             if (value <= 0d)
             {
@@ -230,9 +228,8 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNegative(float value)
         {
-
 #if COMPARE_CHECKS
-            if (value <= 0f)
+            if (value >= 0f)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
             }
@@ -243,9 +240,8 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNegative(double value)
         {
-
 #if COMPARE_CHECKS
-            if (value <= 0d)
+            if (value >= 0d)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
             }
@@ -257,7 +253,7 @@ namespace DevTools
         public static void IsNegative(decimal value)
         {
 #if COMPARE_CHECKS
-            if (value <= 0m)
+            if (value >= 0m)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
             }
@@ -278,7 +274,6 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNonNegative(float value)
         {
-
 #if COMPARE_CHECKS
             if (value < 0f)
             {
@@ -289,7 +284,6 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNonNegative(double value)
         {
-
 #if COMPARE_CHECKS
             if (value < 0d)
             {
@@ -323,7 +317,6 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotPositive(float value)
         {
-
 #if COMPARE_CHECKS
             if (value > 0f)
             {
@@ -335,7 +328,6 @@ namespace DevTools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotPositive(double value)
         {
-
 #if COMPARE_CHECKS
             if (value > 0d)
             {
