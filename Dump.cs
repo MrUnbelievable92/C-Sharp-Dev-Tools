@@ -15,7 +15,7 @@
 
                 result[4] = ' ';
 
-                for (int i = 4; i < 9; i++)
+                for (int i = 5; i < 9; i++)
                 {
                     result[i] = (char)(((value >> (7 - i)) & 1) + '0');
                 }
