@@ -1,20 +1,38 @@
 ﻿namespace DevTools
 {
-    unsafe public static class Log
+    unsafe public static class Dump
     {
-        private static char[] HexValues => new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
-
         public static string Bits(byte value, bool spaces = true)
         {
-            char* result = stackalloc char[8];
-
-            for (int i = 0; i < 8; i++)
+            if (spaces)
             {
-                result[i] = (char)(((value >> (7 - i)) & 1) + 48);
-            }
+                char* result = stackalloc char[9];
 
-            return new string(result, 0, 8).Insert(4, spaces ? " " : string.Empty);
+                for (int i = 0; i < 4; i++)
+                {
+                    result[i] = (char)(((value >> (7 - i)) & 1) + '0');
+                }
+
+                result[4] = ' ';
+
+                for (int i = 4; i < 9; i++)
+                {
+                    result[i] = (char)(((value >> (7 - i)) & 1) + '0');
+                }
+
+                return new string(result, 0, 9);
+            }
+            else
+            {
+                char* result = stackalloc char[8];
+
+                for (int i = 0; i < 8; i++)
+                {
+                    result[i] = (char)(((value >> (7 - i)) & 1) + '0');
+                }
+
+                return new string(result, 0, 8);
+            }
         }
 
         public static string Bits<T>(T value, bool spaces = true)
@@ -45,7 +63,11 @@ Assert.IsNonNegative(bytes);
 
         public static string Hex(byte value)
         {
-            return HexValues[value >> 4].ToString() + HexValues[value & 0b1111].ToString();
+            char* HEX_VALUES = stackalloc char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
+            char* result = stackalloc char[] { HEX_VALUES[value >> 4], HEX_VALUES[value & 0b1111] };
+
+            return new string(result, 0, 2);
         }
 
         public static string Hex<T>(T value, bool spaces = true)

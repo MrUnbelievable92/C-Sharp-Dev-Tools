@@ -1,12 +1,12 @@
 #if DEBUG
 
-#define CONDITION_CHECKS
+#define BOOLEAN_CONDITION_CHECKS
 #define NULL_CHECKS
 #define FILE_PATH_CHECKS
-#define BOUNDS_CHECKS
-#define SUBARRAY_CHECKS
-#define COMPARE_CHECKS
+#define ARRAY_BOUNDS_CHECKS
+#define COMPARISON_CHECKS
 #define ARITHMETIC_LOGIC_CHECKS
+#define MEMORY_CHECKS
 
 #endif
 
@@ -15,27 +15,30 @@ using System.IO;
 using System.Runtime.CompilerServices;
 
 // CONDITIONAL ATTRIBUTE DOESN'T WORK AS EXPECTED WITH UNITY
+
 // strings cannot be passed as arguments if the functions are to work with Unity.Burst
 namespace DevTools
 {
     unsafe public static class Assert
     {
-        #region CONDITION_CHECKS
+        #region BOOLEAN_CONDITION_CHECKS
+        /// <summary>       Part of: Boolean Condition Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsTrue(bool condition)
         {
-#if CONDITION_CHECKS
+#if BOOLEAN_CONDITION_CHECKS
             if (!condition)
             {
                 throw new Exception("Expected 'true'.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Boolean Condition Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsFalse(bool condition)
         {
-#if CONDITION_CHECKS
+#if BOOLEAN_CONDITION_CHECKS
             if (condition)
             {
                 throw new Exception("Expected 'false'.");
@@ -46,46 +49,50 @@ namespace DevTools
 
 
         #region NULL_CHECKS
+        /// <summary>       Part of: Null Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNull(object obj)
         {
 #if NULL_CHECKS
             if (obj != null)
             {
-                throw new InvalidDataException("Expected null."); ;
+                throw new InvalidDataException("Expected null.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Null Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNull(void* ptr)
         {
 #if NULL_CHECKS
             if (ptr != null)
             {
-                throw new InvalidDataException("Expected null."); ;
+                throw new InvalidDataException("Expected null.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Null Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotNull(object obj)
         {
 #if NULL_CHECKS
             if (obj == null)
             {
-                throw new NullReferenceException("Expected not-null."); ;
+                throw new NullReferenceException("Expected not-null.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Null Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotNull(void* ptr)
         {
 #if NULL_CHECKS
             if (ptr == null)
             {
-                throw new NullReferenceException("Expected not-null."); ;
+                throw new NullReferenceException("Expected not-null.");
             }
 #endif
         }
@@ -93,6 +100,7 @@ namespace DevTools
 
 
         #region FILE_PATH_CHECKS
+        /// <summary>       Part of: File Path Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void FileExists(string path) 
         {
@@ -108,42 +116,55 @@ namespace DevTools
         #endregion
 
 
-        #region BOUNDS_CHECKS
+        #region ARRAY_BOUNDS_CHECKS
+        /// <summary>       Part of: Array Bounds Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsWithinArrayBounds(int index, int arrayLength)
+        public static void IsWithinArrayBounds(long index, long arrayLength)
         {
-#if BOUNDS_CHECKS
+#if ARRAY_BOUNDS_CHECKS
             IsNonNegative(arrayLength);
 
-            if ((uint)index >= (uint)arrayLength)
+            if ((ulong)index >= (ulong)arrayLength)
             {
                 throw new IndexOutOfRangeException($"{ index } is out of range (length { arrayLength } - 1).");
             }
 #endif
         }
-        #endregion
-
-
-        #region SUBARRAY_CHECKS
+        
+        /// <summary>       Part of: Array Bounds Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void IsValidSubarray(int index, int NumEntries, int arrayLength)
+        public static void IsWithinArrayBounds(ulong index, ulong arrayLength)
         {
-#if SUBARRAY_CHECKS
-            IsWithinArrayBounds(index, arrayLength);
-            IsNonNegative(NumEntries);
-
-            if (index + NumEntries > arrayLength)
+#if ARRAY_BOUNDS_CHECKS
+            if (index >= arrayLength)
             {
-                throw new IndexOutOfRangeException($"{ nameof(index) } + { nameof(NumEntries) } is { index + NumEntries }, which is larger than length { arrayLength }.");
+                throw new IndexOutOfRangeException($"{ index } is out of range (length { arrayLength } - 1).");
+            }
+#endif
+        }
+        
+        /// <summary>       Part of: Array Bounds Checks         </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsValidSubarray(int index, int numEntries, int arrayLength)
+        {
+#if ARRAY_BOUNDS_CHECKS
+            AreNotEqual(numEntries, 0);
+            IsWithinArrayBounds(index, arrayLength);
+            IsNonNegative(numEntries);
+
+            if (index + numEntries > arrayLength)
+            {
+                throw new IndexOutOfRangeException($"{ nameof(index) } + { nameof(numEntries) } is { index + numEntries }, which is larger than length { arrayLength }.");
             }
 #endif
         }
 
-
+        
+        /// <summary>       Part of: Array Bounds Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SubarraysDoNotOverlap(int firstIndex, int secondIndex, int firstNumEntries, int secondNumEntries)
         {
-#if SUBARRAY_CHECKS
+#if ARRAY_BOUNDS_CHECKS
             if (firstIndex < secondIndex)
             {
                 if (firstIndex + firstNumEntries > secondIndex)
@@ -163,292 +184,326 @@ namespace DevTools
         #endregion
 
 
-        #region COMPARE_CHECKS
-        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        #region COMPARISON_CHECKS
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsPositive(long value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value <= 0)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
             }
 #endif
         }
-
-        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsPositive(float value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value <= 0f)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
             }
 #endif
         }
-
-        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsPositive(double value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value <= 0d)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
             }
 #endif
         }
-
-        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsPositive(decimal value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value <= 0m)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
             }
 #endif
         }
-
-        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNegative(long value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value >= 0)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
             }
 #endif
         }
-
-        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNegative(float value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value >= 0f)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
             }
 #endif
         }
-
-        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNegative(double value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value >= 0d)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
             }
 #endif
         }
-
-        /// <summary>       Remember: Zero is neither positive nor negative.       </summary>
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNegative(decimal value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value >= 0m)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNonNegative(long value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value < 0)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNonNegative(float value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value < 0f)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
             }
 #endif
         }
+
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNonNegative(double value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value < 0d)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNonNegative(decimal value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value < 0m)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotPositive(long value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value > 0)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotPositive(float value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value > 0f)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotPositive(double value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value > 0d)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotPositive(decimal value)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value > 0m)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AreEqual<T>(T a, T b)
             where T : IEquatable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (!a.Equals(b))
             {
                 throw new ArgumentOutOfRangeException($"{ a } was expected to be equal to { b }.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AreNotEqual<T>(T a, T b)
             where T : IEquatable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (a.Equals(b))
             {
                 throw new ArgumentOutOfRangeException($"{ a } was expected not to be equal to { b }.");
             }
 #endif
         }
-
-        /// <summary>    Inclusive    </summary>
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <remarks>       The comparison is inclusive.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsBetween<T>(T value, T min, T max)
             where T : IComparable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if ((value.CompareTo(min) < 0) || (value.CompareTo(max) > 0))
             {
                 throw new ArgumentOutOfRangeException($"Min: { min }, Max: { max }, Value: { value }.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsSmallerOrEqual<T>(T value, T limit)
             where T : IComparable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value.CompareTo(limit) == 1)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be smaller than or equal to { limit }.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsSmaller<T>(T value, T limit)
             where T : IComparable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value.CompareTo(limit) != -1)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be smaller than { limit }.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsGreaterOrEqual<T>(T value, T limit)
             where T : IComparable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value.CompareTo(limit) == -1)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than or equal to { limit }.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsGreater<T>(T value, T limit)
             where T : IComparable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value.CompareTo(limit) != 1)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than { limit }.");
             }
 #endif
         }
+        /// <summary>       Part of: Comparison Checks         </summary>
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotSmaller<T>(T value, T limit)
             where T : IComparable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value.CompareTo(limit) == -1)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected not to be smaller than { limit }.");
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Comparison Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsNotGreater<T>(T value, T limit)
             where T : IComparable<T>
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (value.CompareTo(limit) == 1)
             {
                 throw new ArgumentOutOfRangeException($"{ value } was expected not to be greater than { limit }.");
@@ -459,18 +514,19 @@ namespace DevTools
 
 
         #region ARITHMETIC_LOGIC_CHECKS
+        /// <summary>       Part of: Arithmetic-Logic Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsSafeBoolean(bool x)
         {
-#if COMPARE_CHECKS
+#if COMPARISON_CHECKS
             if (*(byte*)&x > 1)
             {
                 throw new InvalidDataException($"The numerical value of the bool { nameof(x) } is { *(byte*)&x } which can lead to undefined behavior.");
             }
 #endif
         }
-
-
+        
+        /// <summary>       Part of: Arithmetic-Logic Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsDefinedBitShift<T>(int amount)
             where T : unmanaged
@@ -482,12 +538,45 @@ namespace DevTools
             }
 #endif
         }
-
+        
+        /// <summary>       Part of: Arithmetic-Logic Checks         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IsDefinedBitShift<T>(uint amount)
             where T : unmanaged
         {
             IsDefinedBitShift<T>((int)amount);
+        }
+        #endregion
+
+
+        #region MEMORY_CHECKS
+        /// <summary>       Part of: Memory Checks         </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void IsMemoryAligned<T>(T* ptr)
+            where T : unmanaged
+        {
+#if MEMORY_CHECKS
+
+            switch (sizeof(T))
+            {
+                case 2:
+                case 4: 
+                case 8:
+                case 16:
+                case 32:
+                case 64:
+                {
+                    if ((ulong)ptr % (uint)sizeof(T) != 0)
+                    {
+                        throw new DataMisalignedException($"The address { (ulong)ptr } of a { typeof(T) } of size { sizeof(T) } is misaligned by { (ulong)ptr % (uint)sizeof(T) } bytes.");
+                    }
+
+                    return;
+                }
+
+                default: return;
+            }
+#endif
         }
         #endregion
     }

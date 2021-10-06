@@ -1,7 +1,7 @@
 {
   "name": "csharpdevtools",
   "displayName": "C Sharp Dev Tools",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "C Sharp Dev Tools is a small framework for defensive development with conditionally compiled assertions and logging tools.",
   "author": {
     "name": "Maximilian Kalimon",
@@ -10,5 +10,6 @@
   "repository": {
     "url": "https://github.com/MrUnbelievable92/C-Sharp-Dev-Tools",
     "type": "git"
-  }
+  },
+  "type": "library"
 }
