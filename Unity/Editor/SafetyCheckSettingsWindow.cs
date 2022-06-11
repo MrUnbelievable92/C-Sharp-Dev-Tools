@@ -1,6 +1,9 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,28 +13,14 @@ namespace DevTools.Unity.Editor
     {
         private const string FOLDER_NAME = "C Sharp Dev Tools";
         private const string FILE_NAME = "Assert.cs";
+        private const string ALL_CHECKS = "All Checks";
+        private const string LOADING = "???";
+        private const string APPLY = "Apply";
 
-        private const string __FILE__BOOLEAN_CONDITION_CHECKS   = "#define BOOLEAN_CONDITION_CHECKS";
-        private const string __FILE__NULL_CHECKS                = "#define NULL_CHECKS";
-        private const string __FILE__FILE_PATH_CHECKS           = "#define FILE_PATH_CHECKS";
-        private const string __FILE__ARRAY_BOUNDS_CHECKS        = "#define ARRAY_BOUNDS_CHECKS";
-        private const string __FILE__COMPARISON_CHECKS          = "#define COMPARISON_CHECKS";
-        private const string __FILE__ARITHMETIC_LOGIC_CHECKS    = "#define ARITHMETIC_LOGIC_CHECKS";
-        private const string __FILE__MEMORY_CHECKS              = "#define MEMORY_CHECKS";
-
-        internal const string __NAME__ALL_CHECKS                 = "All Checks";
-        internal const string __NAME__BOOLEAN_CONDITION_CHECKS   = "Boolean Condition Checks";
-        internal const string __NAME__NULL_CHECKS                = "Null Checks";
-        internal const string __NAME__FILE_PATH_CHECKS           = "File Path Checks";
-        internal const string __NAME__ARRAY_BOUNDS_CHECKS        = "Array Bounds Checks";
-        internal const string __NAME__COMPARISON_CHECKS          = "Comparison Checks";
-        internal const string __NAME__ARITHMETIC_LOGIC_CHECKS    = "Arithmetic-Logic Checks";
-        internal const string __NAME__MEMORY_CHECKS              = "Memory Checks";
-
+        private bool firstLoad;
 
         private bool anythingChanged;
 
-        private bool allChecks;
         private bool booleanConditionChecks;
         private bool nullChecks;
         private bool filePathChecks;
@@ -40,43 +29,15 @@ namespace DevTools.Unity.Editor
         private bool arithmeticLogicChecks;
         private bool memoryChecks;
 
+        private Dictionary<Assert.GroupAttribute, ulong> methodCallCounts = null;
+        private Dictionary<Assert.GroupAttribute, bool> definesToCheckMarks;
         
+        private static string ProjectPath => Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".AsDirectory().Length);
         private static string ScriptPath 
         {
             get 
             {
-                static string FindIn(string folder)
-                {
-                    string result = null;
-
-                    string[] subDirectories = Directory.GetDirectories(folder);
-
-                    foreach (string subDirectory in subDirectories)
-                    {
-                        if (subDirectory.EndsWith(FOLDER_NAME) && File.Exists(subDirectory + "/" + FILE_NAME))
-                        {
-                            result = subDirectory + "/" + FILE_NAME;
-                        }
-                    }
-
-                    if (result == null)
-                    {
-                        foreach (string subDirectory in subDirectories)
-                        {
-                            result = FindIn(subDirectory);
-
-                            if (result != null)
-                            {
-                                break;
-                            }
-                        }
-                    }
-
-                    return result;
-                }
-
-                string projectFolder = Application.dataPath.Substring(0, Application.dataPath.Length - "/Assets".Length);
-                string defaultPath = projectFolder + "/LocalPackages/" + FOLDER_NAME + "/" + FILE_NAME;
+                string defaultPath = ProjectPath.AsDirectory() + "LocalPackages".AsDirectory() + FOLDER_NAME.AsDirectory() + FILE_NAME;
                 
                 if (File.Exists(defaultPath))
                 {
@@ -84,101 +45,109 @@ namespace DevTools.Unity.Editor
                 }
                 else
                 {
-                    return FindIn(projectFolder) ?? throw new DllNotFoundException($"'{ FOLDER_NAME }/{ FILE_NAME }' was modified and cannot be found.");
+                    return DirectoryExtensions.FindInFolder(ProjectPath, FILE_NAME) ?? throw new DllNotFoundException($"'{ FOLDER_NAME.AsDirectory() + FILE_NAME }' was modified and cannot be found.");
+                }
+            }
+        }
+
+        private ulong TotalMethodCalls
+        {
+            get
+            {
+                ulong count = 0;
+
+                foreach (KeyValuePair<Assert.GroupAttribute, ulong> assertion in methodCallCounts)
+                {
+                    count += assertion.Value;
+                }
+
+                return count;
+            }
+        }
+
+        private bool AllChecks
+        {
+            get 
+            {
+                bool result = true;
+            
+                foreach (KeyValuePair<Assert.GroupAttribute, bool> checkMark in definesToCheckMarks.ToList())
+                {
+                    result &= definesToCheckMarks[checkMark.Key];
+                }
+
+                return result;
+            }
+
+            set
+            {
+                foreach (KeyValuePair<Assert.GroupAttribute, bool> checkMark in definesToCheckMarks.ToList())
+                {
+                    definesToCheckMarks[checkMark.Key] = value;
                 }
             }
         }
 
 
-        private void SetAll(bool value)
+        private string UpdateCondition(string fileContent, Assert.GroupAttribute condition)
         {
-            allChecks              =
-            booleanConditionChecks =
-            nullChecks             =
-            filePathChecks         =
-            arrayBoundsChecks      =
-            comparisonChecks       =
-            arithmeticLogicChecks  =
-            memoryChecks           = value;
-        }
+            bool conditionValueInEditor = definesToCheckMarks[condition];
 
-        private void Update_allChecks()
-        {
-            allChecks = booleanConditionChecks &&
-                        nullChecks             &&
-                        filePathChecks         &&
-                        arrayBoundsChecks      &&
-                        comparisonChecks       &&
-                        arithmeticLogicChecks  &&
-                        memoryChecks;
-        }
-
-        private string UpdateCondition(string fileContent, string condition)
-        {
-            bool conditionValueInEditor = false;
-
-            switch (condition)
+            if (conditionValueInEditor && !IsEnabled(fileContent, condition.FileContent))
             {
-                case __FILE__BOOLEAN_CONDITION_CHECKS: conditionValueInEditor = booleanConditionChecks; break;
-                case __FILE__NULL_CHECKS:              conditionValueInEditor = nullChecks;             break;
-                case __FILE__FILE_PATH_CHECKS:         conditionValueInEditor = filePathChecks;         break;
-                case __FILE__ARRAY_BOUNDS_CHECKS:      conditionValueInEditor = arrayBoundsChecks;      break;
-                case __FILE__COMPARISON_CHECKS:        conditionValueInEditor = comparisonChecks;       break;
-                case __FILE__ARITHMETIC_LOGIC_CHECKS:  conditionValueInEditor = arithmeticLogicChecks;  break;
-                case __FILE__MEMORY_CHECKS:            conditionValueInEditor = memoryChecks;           break;
-
-                default: break;
+                fileContent = Enable(fileContent, condition.FileContent);
             }
-
-            if (conditionValueInEditor && !IsEnabled(fileContent, condition))
+            else if (!conditionValueInEditor && IsEnabled(fileContent, condition.FileContent))
             {
-                fileContent = Enable(fileContent, condition);
-            }
-            else if (!conditionValueInEditor && IsEnabled(fileContent, condition))
-            {
-                fileContent = Disable(fileContent, condition);
+                fileContent = Disable(fileContent, condition.FileContent);
             }
 
             return fileContent;
         }
 
-        private void Apply()
+        private void WriteToFile()
         {
-            string filePath = ScriptPath;
-            StreamReader reader = new StreamReader(filePath);
-
+            StreamReader reader = new StreamReader(ScriptPath);
             string fileContent = reader.ReadToEnd();
 
-            fileContent = UpdateCondition(fileContent, __FILE__BOOLEAN_CONDITION_CHECKS);
-            fileContent = UpdateCondition(fileContent, __FILE__NULL_CHECKS);
-            fileContent = UpdateCondition(fileContent, __FILE__FILE_PATH_CHECKS);
-            fileContent = UpdateCondition(fileContent, __FILE__ARRAY_BOUNDS_CHECKS);
-            fileContent = UpdateCondition(fileContent, __FILE__COMPARISON_CHECKS);
-            fileContent = UpdateCondition(fileContent, __FILE__ARITHMETIC_LOGIC_CHECKS);
-            fileContent = UpdateCondition(fileContent, __FILE__MEMORY_CHECKS);
+            foreach (KeyValuePair<Assert.GroupAttribute, bool> map in definesToCheckMarks)
+            {
+                fileContent = UpdateCondition(fileContent, map.Key);
+            }
             
             anythingChanged = false;
 
             reader.Dispose();
-            File.WriteAllText(filePath, fileContent);
-
+            File.WriteAllText(ScriptPath, fileContent);
             AssetDatabase.Refresh();
         }
 
         private bool IsEnabled(string fileContent, string condition)
         {
-            return fileContent[fileContent.IndexOf(condition) - 1]  == '\n';
+            return fileContent[fileContent.IndexOf("#define " + condition) - 1]  == '\n';
         }
 
         private string Enable(string fileContent, string condition)
         {
-            return fileContent.Remove(fileContent.IndexOf(condition) - 2, 2);
+            return fileContent.Remove(fileContent.IndexOf("#define " + condition) - 2, 2);
         }
         
         private string Disable(string fileContent, string condition)
         {
-            return fileContent.Insert(fileContent.IndexOf(condition), "//");
+            return fileContent.Insert(fileContent.IndexOf("#define " + condition), "//");
         }
+
+        private string GetAssertionGroupCallCountSuffix(Assert.GroupAttribute key = null)
+        {
+            bool loading = methodCallCounts == null;
+            ulong calls = key == null ? (loading ? 0 : TotalMethodCalls) : (loading ? 0 : methodCallCounts[key]);
+
+            return " (" + 
+                   (loading ? LOADING : calls.ToString()) + 
+                   " call" + (calls == 1 ? string.Empty : "s") + 
+                   ")";
+        }
+
 
         [MenuItem("Window/C# Dev Tools/Manage Safety Checks...")]
         private static void ShowWindow()
@@ -188,70 +157,81 @@ namespace DevTools.Unity.Editor
 
         private void OnEnable()
         {   
-            using StreamReader reader = new StreamReader(ScriptPath);
-            string fileContent = reader.ReadToEnd();
+            string projectPath = ProjectPath; // <- Only allowed on the main thread in Unity
+            string scriptPath = ScriptPath; // <- Only allowed on the main thread in Unity
 
-            booleanConditionChecks = IsEnabled(fileContent, __FILE__BOOLEAN_CONDITION_CHECKS);
-            nullChecks             = IsEnabled(fileContent, __FILE__NULL_CHECKS);
-            filePathChecks         = IsEnabled(fileContent, __FILE__FILE_PATH_CHECKS);
-            arrayBoundsChecks      = IsEnabled(fileContent, __FILE__ARRAY_BOUNDS_CHECKS);
-            comparisonChecks       = IsEnabled(fileContent, __FILE__COMPARISON_CHECKS);
-            arithmeticLogicChecks  = IsEnabled(fileContent, __FILE__ARITHMETIC_LOGIC_CHECKS);
-            memoryChecks           = IsEnabled(fileContent, __FILE__MEMORY_CHECKS);
+            Task.Run(() => 
+            {
+                try
+                {
+                    StreamReader reader = new StreamReader(scriptPath);
+                    string fileContent = reader.ReadToEnd();
+                    reader.Dispose();            
 
-            Update_allChecks();
+                    Assert.GroupAttribute[] defines = Assert.GroupAttribute.Defines;
+                    definesToCheckMarks = new Dictionary<Assert.GroupAttribute, bool>(defines.Length);
+                    for (int i = 0; i < defines.Length; i++)
+                    {
+                        definesToCheckMarks.Add(defines[i], IsEnabled(fileContent, defines[i].FileContent));
+                    }
+
+                    firstLoad = true;
+
+                    Task.Run(async () => methodCallCounts = await Assert.GroupAttribute.CountMethodCallsAsync(projectPath));
+                }
+                catch (Exception ex)
+                {
+                    ex.Log();
+                    firstLoad = false;
+                }
+            });
         }
 
-        private void OnGUI()
+        unsafe private void OnGUI()
         {
-            bool _allChecks = GUILayout.Toggle(allChecks, __NAME__ALL_CHECKS);
+            if (!firstLoad) return;
 
-            GUILayout.Space(15);
 
-            bool _booleanConditionChecks = GUILayout.Toggle(booleanConditionChecks, __NAME__BOOLEAN_CONDITION_CHECKS);
-            bool _nullChecks             = GUILayout.Toggle(nullChecks,             __NAME__NULL_CHECKS);
-            bool _filePathChecks         = GUILayout.Toggle(filePathChecks,         __NAME__FILE_PATH_CHECKS);
-            bool _arrayBoundsChecks      = GUILayout.Toggle(arrayBoundsChecks,      __NAME__ARRAY_BOUNDS_CHECKS);
-            bool _comparisonChecks       = GUILayout.Toggle(comparisonChecks,       __NAME__COMPARISON_CHECKS);
-            bool _arithmeticLogicChecks  = GUILayout.Toggle(arithmeticLogicChecks,  __NAME__ARITHMETIC_LOGIC_CHECKS);
-            bool _memoryChecks           = GUILayout.Toggle(memoryChecks,           __NAME__MEMORY_CHECKS);
-
-            GUILayout.Space(15);
-
-            bool _anythingChanged = _allChecks != allChecks;
-
+            bool _allChecks = GUILayout.Toggle(AllChecks, ALL_CHECKS + GetAssertionGroupCallCountSuffix());
+            
+            GUILayout.Space(10);
+            
+            const byte OFFSET_BETWEEN_CHECKBOXES = 2;
+            bool* conditions = stackalloc bool[definesToCheckMarks.Count];
+            int iterations = 0;
+            foreach (KeyValuePair<Assert.GroupAttribute, bool> item in definesToCheckMarks.ToList())
+            {
+                conditions[iterations++] = GUILayout.Toggle(item.Value, item.Key.PublicName + GetAssertionGroupCallCountSuffix(item.Key));
+                GUILayout.Space(OFFSET_BETWEEN_CHECKBOXES);
+            }
+            iterations = 0;
+            
+            GUILayout.Space(15 - OFFSET_BETWEEN_CHECKBOXES);
+            
+            bool _anythingChanged = _allChecks != AllChecks;
+            
             if (_anythingChanged)
             {
-                SetAll(_allChecks);
+                AllChecks = _allChecks;
             }
-
-            if (!_anythingChanged)
+            else
             {
-                _anythingChanged |= (_booleanConditionChecks != booleanConditionChecks);
-                _anythingChanged |= (_nullChecks != nullChecks);
-                _anythingChanged |= (_filePathChecks != filePathChecks);
-                _anythingChanged |= (_arrayBoundsChecks != arrayBoundsChecks);
-                _anythingChanged |= (_comparisonChecks != comparisonChecks);
-                _anythingChanged |= (_arithmeticLogicChecks != arithmeticLogicChecks);
-                _anythingChanged |= (_memoryChecks != memoryChecks);
-
-                booleanConditionChecks = (_booleanConditionChecks != booleanConditionChecks) ? _booleanConditionChecks : booleanConditionChecks;
-                nullChecks             = (_nullChecks != nullChecks)                         ? _nullChecks             : nullChecks;
-                filePathChecks         = (_filePathChecks != filePathChecks)                 ? _filePathChecks         : filePathChecks;
-                arrayBoundsChecks      = (_arrayBoundsChecks != arrayBoundsChecks)           ? _arrayBoundsChecks      : arrayBoundsChecks;
-                comparisonChecks       = (_comparisonChecks != comparisonChecks)             ? _comparisonChecks       : comparisonChecks;
-                arithmeticLogicChecks  = (_arithmeticLogicChecks != arithmeticLogicChecks)   ? _arithmeticLogicChecks  : arithmeticLogicChecks;
-                memoryChecks           = (_memoryChecks != memoryChecks)                     ? _memoryChecks           : memoryChecks;
+                foreach (KeyValuePair<Assert.GroupAttribute, bool> item in definesToCheckMarks.ToList())
+                {
+                    _anythingChanged |= (conditions[iterations] != item.Value);
+                    definesToCheckMarks[item.Key] = (conditions[iterations] != item.Value) ? conditions[iterations] : item.Value;
+                    iterations++;
+                }
             }
-
-            Update_allChecks();
-
+            
+            bool pressedApplyButton = GUILayout.Button(APPLY, GUILayout.ExpandWidth(false));
             anythingChanged |= _anythingChanged;
-
-            if (anythingChanged & GUILayout.Button("Apply", GUILayout.ExpandWidth(false)))
+            if (anythingChanged & pressedApplyButton)
             {
-                Apply();
+                WriteToFile();
             }
+            
+            GUILayout.Space(10);
         }
     }
 }
