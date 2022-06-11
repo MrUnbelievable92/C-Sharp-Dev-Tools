@@ -1,6 +1,6 @@
 {
     "name": "CSharpDevTools",
-    "rootNamespace": "",
+    "rootNamespace": "DevTools",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
