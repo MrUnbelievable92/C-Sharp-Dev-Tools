@@ -1,12 +1,12 @@
 #if DEBUG
 
-#define BOOLEAN_CONDITION_CHECKS
-#define NULL_CHECKS
-#define FILE_PATH_CHECKS
-#define ARRAY_BOUNDS_CHECKS
-#define COMPARISON_CHECKS
-#define ARITHMETIC_LOGIC_CHECKS
-#define MEMORY_CHECKS
+//#define BOOLEAN_CONDITION_CHECKS
+//#define NULL_CHECKS
+//#define FILE_PATH_CHECKS
+//#define ARRAY_BOUNDS_CHECKS
+//#define COMPARISON_CHECKS
+//#define ARITHMETIC_LOGIC_CHECKS
+//#define MEMORY_CHECKS
 
 #endif
 
@@ -29,6 +29,7 @@ namespace DevTools
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
         internal class GroupAttribute : Attribute
         {
+            
             internal const string __FILE__BOOLEAN_CONDITION_CHECKS   = "BOOLEAN_CONDITION_CHECKS";
             internal const string __FILE__NULL_CHECKS                = "NULL_CHECKS";
             internal const string __FILE__FILE_PATH_CHECKS           = "FILE_PATH_CHECKS";
@@ -37,12 +38,19 @@ namespace DevTools
             internal const string __FILE__ARITHMETIC_LOGIC_CHECKS    = "ARITHMETIC_LOGIC_CHECKS";
             internal const string __FILE__MEMORY_CHECKS              = "MEMORY_CHECKS";
             
+            /// <summary> Boolean Condition Checks </summary>
             internal const string __NAME__BOOLEAN_CONDITION_CHECKS   = "Boolean Condition Checks";
+            /// <summary> Null Checks </summary> 
             internal const string __NAME__NULL_CHECKS                = "Null Checks";
+            /// <summary> File Path Checks </summary> 
             internal const string __NAME__FILE_PATH_CHECKS           = "File Path Checks";
+            /// <summary> Array Bounds Checks </summary> 
             internal const string __NAME__ARRAY_BOUNDS_CHECKS        = "Array Bounds Checks";
+            /// <summary> Comparison Checks </summary> 
             internal const string __NAME__COMPARISON_CHECKS          = "Comparison Checks";
+            /// <summary> Arithmetic-Logic Checks </summary> 
             internal const string __NAME__ARITHMETIC_LOGIC_CHECKS    = "Arithmetic-Logic Checks";
+            /// <summary> Memory Checks </summary> 
             internal const string __NAME__MEMORY_CHECKS              = "Memory Checks";
 
 
@@ -102,85 +110,77 @@ namespace DevTools
     
                 static List<Task<Dictionary<Assert.GroupAttribute, ulong>>> CreateTasks(Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap, string path)
                 {
-                    static void CreateTasksRecursive(List<Task<Dictionary<Assert.GroupAttribute, ulong>>> tasks, Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap, string path)
+                    static string GetMethodPrefixFromUsingStatements(string script)
                     {
-                        static string GetMethodPrefixFromUsingStatements(string script)
+                        if (script.Contains("using static DevTools.Assert;"))
                         {
-                            if (script.Contains("using static DevTools.Assert;"))
-                            {
-                                return string.Empty;
-                            }
-                            else if (script.Contains("using DevTools;") && 
-                                    !script.Contains("using NUnit.Framework;") && 
-                                    !script.Contains("using static System.Diagnostics.Debug;"))
-                            {
-                                return "Assert.";
-                            }
-                            else
-                            {
-                                return "DevTools.Assert.";
-                            }
+                            return string.Empty;
                         }
-    
-                        static uint CountSubstrings(string instance, string value)
+                        else if (script.Contains("using DevTools;") && 
+                                !script.Contains("using NUnit.Framework;") && 
+                                !script.Contains("using static System.Diagnostics.Debug;"))
                         {
-    Assert.IsFalse(string.IsNullOrEmpty(value));
-    
-                            uint count = 0;
-                            int index = instance.IndexOf(value);
-                            while (index != -1)// & index < instance.Length)
-                            {
-                                count++;
-                                index = instance.IndexOf(value, index + value.Length);
-                            }
-    
-                            return count;
+                            return "Assert.";
                         }
-    
-    
-                        foreach (string file in Directory.GetFiles(path))
+                        else
                         {
-                            if (Path.GetExtension(file) != ".cs")
-                            {
-                                continue;
-                            }
-    
-                            tasks.Add(Task<Dictionary<Assert.GroupAttribute, ulong>>.Factory.StartNew(
-                            () => 
-                            {
-                                Dictionary<Assert.GroupAttribute, ulong> callCounts = new Dictionary<Assert.GroupAttribute, ulong>();
-                                string script = File.ReadAllText(file);
-                                string prefix = GetMethodPrefixFromUsingStatements(script);
-    
-                                foreach (KeyValuePair<MethodInfo, Assert.GroupAttribute> methodMapping in methodToGroupMap)
-                                {
-                                    Assert.GroupAttribute group = methodMapping.Value;
-                                    ulong numCalls = CountSubstrings(script, prefix + methodMapping.Key.Name);
-    
-                                    if (callCounts.ContainsKey(group))
-                                    {
-                                        callCounts[group] += numCalls;
-                                    }
-                                    else
-                                    {
-                                        callCounts.Add(group, numCalls);
-                                    }
-                                }
-    
-                                return callCounts;
-                            }));
-                        }
-    
-                        foreach (string subDirectory in Directory.GetDirectories(path))
-                        {
-                            CreateTasksRecursive(tasks, methodToGroupMap, subDirectory); 
+                            return "DevTools.Assert.";
                         }
                     }
+                    
+                    static uint CountSubstrings(string instance, string value)
+                    {
+    Assert.IsFalse(string.IsNullOrEmpty(value));
     
-                    List<Task<Dictionary<Assert.GroupAttribute, ulong>>> result = new List<Task<Dictionary<Assert.GroupAttribute, ulong>>>(256);
-                    CreateTasksRecursive(result, methodToGroupMap, path);
+                        uint count = 0;
+                        int index = instance.IndexOf(value);
+                        while (index != -1)// & index < instance.Length)
+                        {
+                            count++;
+                            index = instance.IndexOf(value, index + value.Length);
+                        }
+                        
+                        return count;
+                    }
     
-                    return result;
+
+                    List<Task<Dictionary<Assert.GroupAttribute, ulong>>> tasks = new List<Task<Dictionary<Assert.GroupAttribute, ulong>>>(256);
+
+                    DirectoryExtensions.ForEachFile(path,
+                    (file) =>
+                    {
+                        if (Path.GetExtension(file) != ".cs")
+                        {
+                            return;
+                        }
+    
+                        tasks.Add(Task<Dictionary<Assert.GroupAttribute, ulong>>.Factory.StartNew(
+                        () => 
+                        {
+                            Dictionary<Assert.GroupAttribute, ulong> callCounts = new Dictionary<Assert.GroupAttribute, ulong>();
+                            string script = File.ReadAllText(file);
+                            string prefix = GetMethodPrefixFromUsingStatements(script);
+    
+                            foreach (KeyValuePair<MethodInfo, Assert.GroupAttribute> methodMapping in methodToGroupMap)
+                            {
+                                Assert.GroupAttribute group = methodMapping.Value;
+                                ulong numCalls = CountSubstrings(script, prefix + methodMapping.Key.Name);
+    
+                                if (callCounts.ContainsKey(group))
+                                {
+                                    callCounts[group] += numCalls;
+                                }
+                                else
+                                {
+                                    callCounts.Add(group, numCalls);
+                                }
+                            }
+    
+                            return callCounts;
+                        }));
+                    });
+
+                    return tasks;
                 }
     
                 static async Task<Dictionary<Assert.GroupAttribute, ulong>> CombineResults(List<Task<Dictionary<Assert.GroupAttribute, ulong>>> jobs, Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap)
@@ -227,7 +227,7 @@ namespace DevTools
 
         
         #region BOOLEAN_CONDITION_CHECKS
-        /// <summary>       Part of: Boolean Condition Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__BOOLEAN_CONDITION_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__BOOLEAN_CONDITION_CHECKS)]
         public static void IsTrue(bool condition)
@@ -240,7 +240,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Boolean Condition Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__BOOLEAN_CONDITION_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__BOOLEAN_CONDITION_CHECKS)]
         public static void IsFalse(bool condition)
@@ -255,7 +255,7 @@ namespace DevTools
         #endregion
 
         #region NULL_CHECKS
-        /// <summary>       Part of: Null Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
         public static void IsNull(object obj)
@@ -268,7 +268,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Null Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
         public static void IsNull<T>(T? obj)
@@ -282,7 +282,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Null Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
         unsafe public static void IsNull(void* ptr)
@@ -295,7 +295,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Null Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
         public static void IsNotNull(object obj)
@@ -308,7 +308,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Null Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
         public static void IsNotNull<T>(T? obj)
@@ -322,7 +322,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Null Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
         unsafe public static void IsNotNull(void* ptr)
@@ -337,7 +337,7 @@ namespace DevTools
         #endregion
 
         #region FILE_PATH_CHECKS
-        /// <summary>       Part of: File Path Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__FILE_PATH_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__FILE_PATH_CHECKS)]
         public static void FileExists(string path) 
@@ -354,7 +354,7 @@ namespace DevTools
         #endregion
 
         #region ARRAY_BOUNDS_CHECKS
-        /// <summary>       Part of: Array Bounds Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS)]
         public static void IsWithinArrayBounds(long index, long arrayLength)
@@ -369,7 +369,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Array Bounds Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS)]
         public static void IsWithinArrayBounds(ulong index, ulong arrayLength)
@@ -382,7 +382,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Array Bounds Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS)]
         public static void IsValidSubarray(int index, int numEntries, int arrayLength)
@@ -400,7 +400,7 @@ namespace DevTools
         }
 
         
-        /// <summary>       Part of: Array Bounds Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS)]
         public static void SubarraysDoNotOverlap(int firstIndex, int secondIndex, int firstNumEntries, int secondNumEntries)
@@ -425,7 +425,7 @@ namespace DevTools
         #endregion
 
         #region COMPARISON_CHECKS
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -439,7 +439,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -453,7 +453,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -467,7 +467,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -481,7 +481,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -495,7 +495,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -509,7 +509,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -523,7 +523,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -537,7 +537,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -551,7 +551,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -565,7 +565,7 @@ namespace DevTools
 #endif
         }
 
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -579,7 +579,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -593,7 +593,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -607,7 +607,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -621,7 +621,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -635,7 +635,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -649,7 +649,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
         public static void AreEqual<T>(T a, T b)
@@ -663,7 +663,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
         public static void AreNotEqual<T>(T a, T b)
@@ -677,7 +677,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       The comparison is inclusive.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -692,7 +692,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
         public static void IsSmallerOrEqual<T>(T value, T limit)
@@ -706,7 +706,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
         public static void IsSmaller<T>(T value, T limit)
@@ -720,7 +720,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
         public static void IsGreaterOrEqual<T>(T value, T limit)
@@ -734,7 +734,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
         public static void IsGreater<T>(T value, T limit)
@@ -747,7 +747,7 @@ namespace DevTools
             }
 #endif
         }
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -762,7 +762,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Comparison Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
         public static void IsNotGreater<T>(T value, T limit)
@@ -778,12 +778,12 @@ namespace DevTools
         #endregion
 
         #region ARITHMETIC_LOGIC_CHECKS
-        /// <summary>       Part of: Arithmetic-Logic Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS)]
         unsafe public static void IsSafeBoolean(bool x)
         {
-#if COMPARISON_CHECKS
+#if ARITHMETIC_LOGIC_CHECKS
             if (*(byte*)&x > 1)
             {
                 throw new InvalidDataException($"The numerical value of the bool { nameof(x) } is { *(byte*)&x } which can lead to undefined behavior.");
@@ -791,7 +791,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Arithmetic-Logic Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS)]
         unsafe public static void IsDefinedBitShift<T>(int amount)
@@ -805,7 +805,7 @@ namespace DevTools
 #endif
         }
         
-        /// <summary>       Part of: Arithmetic-Logic Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS)]
         public static void IsDefinedBitShift<T>(uint amount)
@@ -816,7 +816,7 @@ namespace DevTools
         #endregion
 
         #region MEMORY_CHECKS
-        /// <summary>       Part of: Memory Checks         </summary>
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__MEMORY_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__MEMORY_CHECKS)]
         unsafe public static void IsMemoryAligned<T>(T* ptr)

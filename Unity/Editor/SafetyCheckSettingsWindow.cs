@@ -18,20 +18,12 @@ namespace DevTools.Unity.Editor
         private const string APPLY = "Apply";
 
         private bool firstLoad;
-
         private bool anythingChanged;
-
-        private bool booleanConditionChecks;
-        private bool nullChecks;
-        private bool filePathChecks;
-        private bool arrayBoundsChecks;
-        private bool comparisonChecks;
-        private bool arithmeticLogicChecks;
-        private bool memoryChecks;
 
         private Dictionary<Assert.GroupAttribute, ulong> methodCallCounts = null;
         private Dictionary<Assert.GroupAttribute, bool> definesToCheckMarks;
         
+
         private static string ProjectPath => Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".AsDirectory().Length);
         private static string ScriptPath 
         {
@@ -89,17 +81,17 @@ namespace DevTools.Unity.Editor
         }
 
 
-        private string UpdateCondition(string fileContent, Assert.GroupAttribute condition)
+        private string UpdateCondition(string fileContent, Assert.GroupAttribute assertionGroup)
         {
-            bool conditionValueInEditor = definesToCheckMarks[condition];
+            bool conditionValueInEditor = definesToCheckMarks[assertionGroup];
 
-            if (conditionValueInEditor && !IsEnabled(fileContent, condition.FileContent))
+            if (conditionValueInEditor && !IsEnabled(fileContent, assertionGroup))
             {
-                fileContent = Enable(fileContent, condition.FileContent);
+                fileContent = Enable(fileContent, assertionGroup);
             }
-            else if (!conditionValueInEditor && IsEnabled(fileContent, condition.FileContent))
+            else if (!conditionValueInEditor && IsEnabled(fileContent, assertionGroup))
             {
-                fileContent = Disable(fileContent, condition.FileContent);
+                fileContent = Disable(fileContent, assertionGroup);
             }
 
             return fileContent;
@@ -122,19 +114,23 @@ namespace DevTools.Unity.Editor
             AssetDatabase.Refresh();
         }
 
-        private bool IsEnabled(string fileContent, string condition)
+        private bool IsEnabled(string fileContent, Assert.GroupAttribute assertionGroup)
         {
-            return fileContent[fileContent.IndexOf("#define " + condition) - 1]  == '\n';
+            return fileContent.Substring(fileContent.IndexOf("#define " + assertionGroup.FileContent) - 2, 2) != "//";
         }
 
-        private string Enable(string fileContent, string condition)
+        private string Enable(string fileContent, Assert.GroupAttribute assertionGroup)
         {
-            return fileContent.Remove(fileContent.IndexOf("#define " + condition) - 2, 2);
+Assert.IsFalse(IsEnabled(fileContent, assertionGroup));
+
+            return fileContent.Remove(fileContent.IndexOf("#define " + assertionGroup.FileContent) - 2, 2);
         }
         
-        private string Disable(string fileContent, string condition)
+        private string Disable(string fileContent, Assert.GroupAttribute assertionGroup)
         {
-            return fileContent.Insert(fileContent.IndexOf("#define " + condition), "//");
+Assert.IsTrue(IsEnabled(fileContent, assertionGroup));
+
+            return fileContent.Insert(fileContent.IndexOf("#define " + assertionGroup.FileContent), "//");
         }
 
         private string GetAssertionGroupCallCountSuffix(Assert.GroupAttribute key = null)
@@ -172,7 +168,7 @@ namespace DevTools.Unity.Editor
                     definesToCheckMarks = new Dictionary<Assert.GroupAttribute, bool>(defines.Length);
                     for (int i = 0; i < defines.Length; i++)
                     {
-                        definesToCheckMarks.Add(defines[i], IsEnabled(fileContent, defines[i].FileContent));
+                        definesToCheckMarks.Add(defines[i], IsEnabled(fileContent, defines[i]));
                     }
 
                     firstLoad = true;
@@ -192,7 +188,7 @@ namespace DevTools.Unity.Editor
             if (!firstLoad) return;
 
 
-            bool _allChecks = GUILayout.Toggle(AllChecks, ALL_CHECKS + GetAssertionGroupCallCountSuffix());
+            bool _allChecks = GUILayout.Toggle(AllChecks, "  " + ALL_CHECKS + GetAssertionGroupCallCountSuffix(null));
             
             GUILayout.Space(10);
             
@@ -201,11 +197,10 @@ namespace DevTools.Unity.Editor
             int iterations = 0;
             foreach (KeyValuePair<Assert.GroupAttribute, bool> item in definesToCheckMarks.ToList())
             {
-                conditions[iterations++] = GUILayout.Toggle(item.Value, item.Key.PublicName + GetAssertionGroupCallCountSuffix(item.Key));
+                conditions[iterations++] = GUILayout.Toggle(item.Value, "  " + item.Key.PublicName + GetAssertionGroupCallCountSuffix(item.Key));
                 GUILayout.Space(OFFSET_BETWEEN_CHECKBOXES);
             }
-            iterations = 0;
-            
+
             GUILayout.Space(15 - OFFSET_BETWEEN_CHECKBOXES);
             
             bool _anythingChanged = _allChecks != AllChecks;
@@ -216,6 +211,8 @@ namespace DevTools.Unity.Editor
             }
             else
             {
+                iterations = 0;
+
                 foreach (KeyValuePair<Assert.GroupAttribute, bool> item in definesToCheckMarks.ToList())
                 {
                     _anythingChanged |= (conditions[iterations] != item.Value);
@@ -223,7 +220,7 @@ namespace DevTools.Unity.Editor
                     iterations++;
                 }
             }
-            
+
             bool pressedApplyButton = GUILayout.Button(APPLY, GUILayout.ExpandWidth(false));
             anythingChanged |= _anythingChanged;
             if (anythingChanged & pressedApplyButton)
