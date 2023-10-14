@@ -22,22 +22,22 @@ namespace DevTools.Unity.Editor
 
         private Dictionary<Assert.GroupAttribute, ulong> methodCallCounts = null;
         private Dictionary<Assert.GroupAttribute, bool> definesToCheckMarks;
-        
+
 
         private static string ProjectPath => Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".AsDirectory().Length);
-        private static string ScriptPath 
+        private static string ScriptPath
         {
-            get 
+            get
             {
                 string defaultPath = ProjectPath.AsDirectory() + "LocalPackages".AsDirectory() + FOLDER_NAME.AsDirectory() + FILE_NAME;
-                
+
                 if (File.Exists(defaultPath))
                 {
                     return defaultPath;
                 }
                 else
                 {
-                    return DirectoryExtensions.FindInFolder(ProjectPath, FILE_NAME) ?? throw new DllNotFoundException($"'{ FOLDER_NAME.AsDirectory() + FILE_NAME }' was modified and cannot be found.");
+                    return DirectoryExtensions.FindInFolder(ProjectPath, FILE_NAME) ?? throw new DllNotFoundException($"'{ FOLDER_NAME.AsDirectory() + FILE_NAME }' was modified and cannot be found. Enabling/Disabling assertions in the editor is not supported.");
                 }
             }
         }
@@ -59,10 +59,10 @@ namespace DevTools.Unity.Editor
 
         private bool AllChecks
         {
-            get 
+            get
             {
                 bool result = true;
-            
+
                 foreach (KeyValuePair<Assert.GroupAttribute, bool> checkMark in definesToCheckMarks.ToList())
                 {
                     result &= definesToCheckMarks[checkMark.Key];
@@ -106,7 +106,7 @@ namespace DevTools.Unity.Editor
             {
                 fileContent = UpdateCondition(fileContent, map.Key);
             }
-            
+
             anythingChanged = false;
 
             reader.Dispose();
@@ -125,7 +125,7 @@ Assert.IsFalse(IsEnabled(fileContent, assertionGroup));
 
             return fileContent.Remove(fileContent.IndexOf("#define " + assertionGroup.FileContent) - 2, 2);
         }
-        
+
         private string Disable(string fileContent, Assert.GroupAttribute assertionGroup)
         {
 Assert.IsTrue(IsEnabled(fileContent, assertionGroup));
@@ -138,9 +138,9 @@ Assert.IsTrue(IsEnabled(fileContent, assertionGroup));
             bool loading = methodCallCounts == null;
             ulong calls = key == null ? (loading ? 0 : TotalMethodCalls) : (loading ? 0 : methodCallCounts[key]);
 
-            return " (" + 
-                   (loading ? LOADING : calls.ToString()) + 
-                   " call" + (calls == 1 ? string.Empty : "s") + 
+            return " (" +
+                   (loading ? LOADING : calls.ToString()) +
+                   " call" + (calls == 1 ? string.Empty : "s") +
                    ")";
         }
 
@@ -152,17 +152,17 @@ Assert.IsTrue(IsEnabled(fileContent, assertionGroup));
         }
 
         private void OnEnable()
-        {   
+        {
             string projectPath = ProjectPath; // <- Only allowed on the main thread in Unity
             string scriptPath = ScriptPath; // <- Only allowed on the main thread in Unity
 
-            Task.Run(() => 
+            Task.Run(() =>
             {
                 try
                 {
                     StreamReader reader = new StreamReader(scriptPath);
                     string fileContent = reader.ReadToEnd();
-                    reader.Dispose();            
+                    reader.Dispose();
 
                     Assert.GroupAttribute[] defines = Assert.GroupAttribute.Defines;
                     definesToCheckMarks = new Dictionary<Assert.GroupAttribute, bool>(defines.Length);
@@ -189,9 +189,9 @@ Assert.IsTrue(IsEnabled(fileContent, assertionGroup));
 
 
             bool _allChecks = GUILayout.Toggle(AllChecks, "  " + ALL_CHECKS + GetAssertionGroupCallCountSuffix(null));
-            
+
             GUILayout.Space(10);
-            
+
             const byte OFFSET_BETWEEN_CHECKBOXES = 2;
             bool* conditions = stackalloc bool[definesToCheckMarks.Count];
             int iterations = 0;
@@ -202,9 +202,9 @@ Assert.IsTrue(IsEnabled(fileContent, assertionGroup));
             }
 
             GUILayout.Space(15 - OFFSET_BETWEEN_CHECKBOXES);
-            
+
             bool _anythingChanged = _allChecks != AllChecks;
-            
+
             if (_anythingChanged)
             {
                 AllChecks = _allChecks;
@@ -227,7 +227,7 @@ Assert.IsTrue(IsEnabled(fileContent, assertionGroup));
             {
                 WriteToFile();
             }
-            
+
             GUILayout.Space(10);
         }
     }

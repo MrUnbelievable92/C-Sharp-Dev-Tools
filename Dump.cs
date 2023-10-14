@@ -64,7 +64,7 @@ Assert.IsNonNegative(bytes);
         {
 Assert.IsNotNull(ptr);
 Assert.IsNonNegative(bytes);
-            
+
             char* HEX_VALUES = stackalloc char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
             byte* address = (byte*)ptr;
