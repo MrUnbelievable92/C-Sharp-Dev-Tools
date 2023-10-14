@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 
@@ -29,7 +29,7 @@ namespace DevTools
                     return result;
                 }
             }
-        
+
             return null;
         }
 
@@ -37,7 +37,7 @@ namespace DevTools
         public static void DeleteFolder(string folder)
         {
             ForEachDirectory(folder,
-            (__folder) => 
+            (__folder) =>
             {
                 foreach (string file in Directory.GetFiles(__folder))
                 {

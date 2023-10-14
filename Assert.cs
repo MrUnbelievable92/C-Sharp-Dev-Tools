@@ -1,3 +1,7 @@
+// Constraints:
+// No use of the ConditionalAttribute
+// strings, Exceptions or any other managed objects cannot be passed as arguments to functions if they are to work with Unity.Burst
+
 #if DEBUG
 
 #define BOOLEAN_CONDITION_CHECKS
@@ -11,221 +15,25 @@
 #endif
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 
-// CONDITIONAL ATTRIBUTE DOESN'T WORK AS EXPECTED WITH UNITY
-
-// strings cannot be passed as arguments if the functions are to work with Unity.Burst
 namespace DevTools
 {
-    public static class Assert
+    public static partial class Assert
     {
-        #region Reflection Utils
-        [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-        internal class GroupAttribute : Attribute
+        internal const string ASSERTION_FAILED_TAG = "Assertion Failed: ";
+
+
+        public static UnreachableException Unreachable()
         {
-            
-            internal const string __FILE__BOOLEAN_CONDITION_CHECKS   = "BOOLEAN_CONDITION_CHECKS";
-            internal const string __FILE__NULL_CHECKS                = "NULL_CHECKS";
-            internal const string __FILE__FILE_PATH_CHECKS           = "FILE_PATH_CHECKS";
-            internal const string __FILE__ARRAY_BOUNDS_CHECKS        = "ARRAY_BOUNDS_CHECKS";
-            internal const string __FILE__COMPARISON_CHECKS          = "COMPARISON_CHECKS";
-            internal const string __FILE__ARITHMETIC_LOGIC_CHECKS    = "ARITHMETIC_LOGIC_CHECKS";
-            internal const string __FILE__MEMORY_CHECKS              = "MEMORY_CHECKS";
-            
-            /// <summary> Boolean Condition Checks </summary>
-            internal const string __NAME__BOOLEAN_CONDITION_CHECKS   = "Boolean Condition Checks";
-            /// <summary> Null Checks </summary> 
-            internal const string __NAME__NULL_CHECKS                = "Null Checks";
-            /// <summary> File Path Checks </summary> 
-            internal const string __NAME__FILE_PATH_CHECKS           = "File Path Checks";
-            /// <summary> Array Bounds Checks </summary> 
-            internal const string __NAME__ARRAY_BOUNDS_CHECKS        = "Array Bounds Checks";
-            /// <summary> Comparison Checks </summary> 
-            internal const string __NAME__COMPARISON_CHECKS          = "Comparison Checks";
-            /// <summary> Arithmetic-Logic Checks </summary> 
-            internal const string __NAME__ARITHMETIC_LOGIC_CHECKS    = "Arithmetic-Logic Checks";
-            /// <summary> Memory Checks </summary> 
-            internal const string __NAME__MEMORY_CHECKS              = "Memory Checks";
-
-
-            private GroupAttribute() { }
-            internal GroupAttribute(string publicName)
-            {
-                PublicName = publicName;
-                FileContent = Defines.Where(grp => grp.PublicName == publicName).First().FileContent;
-            }
-
-
-            internal string FileContent { get; private set; }
-            internal string PublicName { get; private set; }
-            internal static Assert.GroupAttribute[] Defines => new Assert.GroupAttribute[]
-            {
-                new Assert.GroupAttribute{ FileContent = __FILE__BOOLEAN_CONDITION_CHECKS, PublicName = __NAME__BOOLEAN_CONDITION_CHECKS },
-                new Assert.GroupAttribute{ FileContent = __FILE__NULL_CHECKS,              PublicName = __NAME__NULL_CHECKS              },
-                new Assert.GroupAttribute{ FileContent = __FILE__FILE_PATH_CHECKS,         PublicName = __NAME__FILE_PATH_CHECKS         },
-                new Assert.GroupAttribute{ FileContent = __FILE__ARRAY_BOUNDS_CHECKS,      PublicName = __NAME__ARRAY_BOUNDS_CHECKS      },
-                new Assert.GroupAttribute{ FileContent = __FILE__COMPARISON_CHECKS,        PublicName = __NAME__COMPARISON_CHECKS        },
-                new Assert.GroupAttribute{ FileContent = __FILE__ARITHMETIC_LOGIC_CHECKS,  PublicName = __NAME__ARITHMETIC_LOGIC_CHECKS  },
-                new Assert.GroupAttribute{ FileContent = __FILE__MEMORY_CHECKS,            PublicName = __NAME__MEMORY_CHECKS            }
-            };
-        
-
-            internal static async Task<Dictionary<Assert.GroupAttribute, ulong>> CountMethodCallsAsync(string projectPath)
-            {
-                static Dictionary<MethodInfo, Assert.GroupAttribute> GetAssertionsMappedToGroups()
-                {
-                    static bool ContainsOverload(Dictionary<MethodInfo, Assert.GroupAttribute> result, MethodInfo method)
-                    {
-                        foreach (KeyValuePair<MethodInfo, Assert.GroupAttribute> item in result)
-                        {
-                            if (item.Key.Name == method.Name)
-                            {
-                                return true;
-                            }
-                        }
-    
-                        return false;
-                    }
-    
-    
-                    Dictionary<MethodInfo, Assert.GroupAttribute> result = new Dictionary<MethodInfo, Assert.GroupAttribute>();
-                    
-                    foreach (MethodInfo method in typeof(Assert).GetMethods())
-                    {
-                        Assert.GroupAttribute attribute = method.GetCustomAttribute<Assert.GroupAttribute>(false);
-                        if (attribute != null && !ContainsOverload(result, method))
-                        {
-                            result.Add(method, attribute);
-                        }
-                    }
-    
-                    return result;
-                }
-    
-                static List<Task<Dictionary<Assert.GroupAttribute, ulong>>> CreateTasks(Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap, string path)
-                {
-                    static string GetMethodPrefixFromUsingStatements(string script)
-                    {
-                        if (script.Contains("using static DevTools.Assert;"))
-                        {
-                            return string.Empty;
-                        }
-                        else if (script.Contains("using DevTools;") && 
-                                !script.Contains("using NUnit.Framework;") && 
-                                !script.Contains("using static System.Diagnostics.Debug;"))
-                        {
-                            return "Assert.";
-                        }
-                        else
-                        {
-                            return "DevTools.Assert.";
-                        }
-                    }
-                    
-                    static uint CountSubstrings(string instance, string value)
-                    {
-    Assert.IsFalse(string.IsNullOrEmpty(value));
-    
-                        uint count = 0;
-                        int index = instance.IndexOf(value);
-                        while (index != -1)// & index < instance.Length)
-                        {
-                            count++;
-                            index = instance.IndexOf(value, index + value.Length);
-                        }
-                        
-                        return count;
-                    }
-    
-
-                    List<Task<Dictionary<Assert.GroupAttribute, ulong>>> tasks = new List<Task<Dictionary<Assert.GroupAttribute, ulong>>>(256);
-
-                    DirectoryExtensions.ForEachFile(path,
-                    (file) =>
-                    {
-                        if (Path.GetExtension(file) != ".cs")
-                        {
-                            return;
-                        }
-    
-                        tasks.Add(Task<Dictionary<Assert.GroupAttribute, ulong>>.Factory.StartNew(
-                        () => 
-                        {
-                            Dictionary<Assert.GroupAttribute, ulong> callCounts = new Dictionary<Assert.GroupAttribute, ulong>();
-                            string script = File.ReadAllText(file);
-                            string prefix = GetMethodPrefixFromUsingStatements(script);
-    
-                            foreach (KeyValuePair<MethodInfo, Assert.GroupAttribute> methodMapping in methodToGroupMap)
-                            {
-                                Assert.GroupAttribute group = methodMapping.Value;
-                                ulong numCalls = CountSubstrings(script, prefix + methodMapping.Key.Name);
-    
-                                if (callCounts.ContainsKey(group))
-                                {
-                                    callCounts[group] += numCalls;
-                                }
-                                else
-                                {
-                                    callCounts.Add(group, numCalls);
-                                }
-                            }
-    
-                            return callCounts;
-                        }));
-                    });
-
-                    return tasks;
-                }
-    
-                static async Task<Dictionary<Assert.GroupAttribute, ulong>> CombineResults(List<Task<Dictionary<Assert.GroupAttribute, ulong>>> jobs, Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap)
-                {
-                    static void SubtractMethodDefinitions(Dictionary<Assert.GroupAttribute, ulong> result, Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap)
-                    {
-                        foreach (KeyValuePair<MethodInfo, Assert.GroupAttribute> mapping in methodToGroupMap)
-                        {
-                            result[methodToGroupMap[mapping.Key]] -= 1;
-                        }
-                    }
-    
-    
-                    Dictionary<Assert.GroupAttribute, ulong> result = await jobs[0]; // at the very least this very script is assigned a job
-                    SubtractMethodDefinitions(result, methodToGroupMap);
-                    
-                    for (int i = 1; i < jobs.Count; i++)
-                    {
-                        foreach (KeyValuePair<Assert.GroupAttribute, ulong> callCount in await jobs[i])
-                        {
-                            result[callCount.Key] += callCount.Value;
-                        }
-                    }
-    
-                    return result;
-                }
-                
-    
-                try
-                {
-                    Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap = GetAssertionsMappedToGroups();
-                    List<Task<Dictionary<Assert.GroupAttribute, ulong>>> jobs = CreateTasks(methodToGroupMap, projectPath);
-    
-                    return await CombineResults(jobs, methodToGroupMap);
-                }
-                catch (Exception ex)
-                { 
-                    ex.Log();    
-                    return null;
-                }
-            }
+#if DEBUG
+            throw new UnreachableException();
+#else
+            return null;
+#endif
         }
-        #endregion
 
-        
         #region BOOLEAN_CONDITION_CHECKS
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__BOOLEAN_CONDITION_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -235,11 +43,11 @@ namespace DevTools
 #if BOOLEAN_CONDITION_CHECKS
             if (!condition)
             {
-                throw new Exception("Expected 'true'.");
+                throw new Exception(ASSERTION_FAILED_TAG + "Expected 'true'.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__BOOLEAN_CONDITION_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__BOOLEAN_CONDITION_CHECKS)]
@@ -248,7 +56,7 @@ namespace DevTools
 #if BOOLEAN_CONDITION_CHECKS
             if (condition)
             {
-                throw new Exception("Expected 'false'.");
+                throw new Exception(ASSERTION_FAILED_TAG + "Expected 'false'.");
             }
 #endif
         }
@@ -263,11 +71,11 @@ namespace DevTools
 #if NULL_CHECKS
             if (obj != null)
             {
-                throw new InvalidDataException("Expected null.");
+                throw new InvalidDataException(ASSERTION_FAILED_TAG + "Expected null.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
@@ -277,11 +85,11 @@ namespace DevTools
 #if NULL_CHECKS
             if (obj != null)
             {
-                throw new InvalidDataException("Expected null.");
+                throw new InvalidDataException(ASSERTION_FAILED_TAG + "Expected null.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
@@ -290,11 +98,11 @@ namespace DevTools
 #if NULL_CHECKS
             if (ptr != null)
             {
-                throw new InvalidDataException("Expected null.");
+                throw new InvalidDataException(ASSERTION_FAILED_TAG + "Expected null.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
@@ -303,11 +111,11 @@ namespace DevTools
 #if NULL_CHECKS
             if (obj == null)
             {
-                throw new NullReferenceException("Expected not-null.");
+                throw new NullReferenceException(ASSERTION_FAILED_TAG + "Expected not-null.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
@@ -317,11 +125,11 @@ namespace DevTools
 #if NULL_CHECKS
             if (obj == null)
             {
-                throw new NullReferenceException("Expected not-null.");
+                throw new NullReferenceException(ASSERTION_FAILED_TAG + "Expected not-null.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__NULL_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__NULL_CHECKS)]
@@ -330,7 +138,7 @@ namespace DevTools
 #if NULL_CHECKS
             if (ptr == null)
             {
-                throw new NullReferenceException("Expected not-null.");
+                throw new NullReferenceException(ASSERTION_FAILED_TAG + "Expected not-null.");
             }
 #endif
         }
@@ -340,14 +148,14 @@ namespace DevTools
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__FILE_PATH_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__FILE_PATH_CHECKS)]
-        public static void FileExists(string path) 
+        public static void FileExists(string path)
         {
 #if FILE_PATH_CHECKS
             IsNotNull(path); // File.Exists only returns 'false' in case 'path' is null (no explicit throw, which is what I want)
 
             if (!File.Exists(path))
             {
-                throw new FileNotFoundException(path);
+                throw new FileNotFoundException(ASSERTION_FAILED_TAG + path + " not found");
             }
 #endif
         }
@@ -364,11 +172,11 @@ namespace DevTools
 
             if ((ulong)index >= (ulong)arrayLength)
             {
-                throw new IndexOutOfRangeException($"{ index } is out of range (length { arrayLength } - 1).");
+                throw new IndexOutOfRangeException(ASSERTION_FAILED_TAG + $"{ index } is out of range (length { arrayLength } - 1).");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS)]
@@ -377,29 +185,27 @@ namespace DevTools
 #if ARRAY_BOUNDS_CHECKS
             if (index >= arrayLength)
             {
-                throw new IndexOutOfRangeException($"{ index } is out of range (length { arrayLength } - 1).");
+                throw new IndexOutOfRangeException(ASSERTION_FAILED_TAG + $"{ index } is out of range (length { arrayLength } - 1).");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS)]
         public static void IsValidSubarray(int index, int numEntries, int arrayLength)
         {
 #if ARRAY_BOUNDS_CHECKS
-            AreNotEqual(numEntries, 0);
             IsWithinArrayBounds(index, arrayLength);
             IsNonNegative(numEntries);
 
             if (index + numEntries > arrayLength)
             {
-                throw new IndexOutOfRangeException($"{ nameof(index) } + { nameof(numEntries) } is { index + numEntries }, which is larger than length { arrayLength }.");
+                throw new IndexOutOfRangeException(ASSERTION_FAILED_TAG + $"{ nameof(index) } + { nameof(numEntries) } is { index + numEntries }, which is larger than length { arrayLength }.");
             }
 #endif
         }
 
-        
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARRAY_BOUNDS_CHECKS)]
@@ -410,16 +216,16 @@ namespace DevTools
             {
                 if (firstIndex + firstNumEntries > secondIndex)
                 {
-                    throw new IndexOutOfRangeException($"Subarray from { firstIndex } to { firstIndex + firstNumEntries - 1} overlaps with subarray from { secondIndex } to { secondIndex + secondNumEntries - 1 }.");
+                    throw new IndexOutOfRangeException(ASSERTION_FAILED_TAG + $"Subarray from { firstIndex } to { firstIndex + firstNumEntries - 1} overlaps with subarray from { secondIndex } to { secondIndex + secondNumEntries - 1 }.");
                 }
             }
             else
             {
                 if (secondIndex + secondNumEntries > firstIndex)
                 {
-                    throw new IndexOutOfRangeException($"Subarray from { secondIndex } to { secondIndex + secondNumEntries - 1} overlaps with subarray from { firstIndex } to { firstIndex + firstNumEntries - 1 }.");
+                    throw new IndexOutOfRangeException(ASSERTION_FAILED_TAG + $"Subarray from { secondIndex } to { secondIndex + secondNumEntries - 1} overlaps with subarray from { firstIndex } to { firstIndex + firstNumEntries - 1 }.");
                 }
-            } 
+            }
 #endif
         }
         #endregion
@@ -434,11 +240,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value <= 0)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be positive.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -448,11 +254,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value <= 0f)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be positive.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -462,11 +268,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value <= 0d)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be positive.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -476,11 +282,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value <= 0m)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be positive.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -490,11 +296,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value >= 0)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be negative.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -504,11 +310,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value >= 0f)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be negative.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -518,11 +324,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value >= 0d)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be negative.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -532,11 +338,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value >= 0m)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be negative.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -546,11 +352,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value < 0)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be positive or equal to zero.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -560,7 +366,7 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value < 0f)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be positive or equal to zero.");
             }
 #endif
         }
@@ -574,11 +380,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value < 0d)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be positive or equal to zero.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -588,11 +394,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value < 0m)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be positive or equal to zero.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be positive or equal to zero.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -602,11 +408,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value > 0)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be negative or equal to zero.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -616,11 +422,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value > 0f)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be negative or equal to zero.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -630,11 +436,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value > 0d)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be negative or equal to zero.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       Remember: Zero is neither positive nor negative.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -644,11 +450,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value > 0m)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be negative or equal to zero.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be negative or equal to zero.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -658,11 +464,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (!a.Equals(b))
             {
-                throw new ArgumentOutOfRangeException($"{ a } was expected to be equal to { b }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ a } was expected to be equal to { b }.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -672,11 +478,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (a.Equals(b))
             {
-                throw new ArgumentOutOfRangeException($"{ a } was expected not to be equal to { b }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ a } was expected not to be equal to { b }.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         /// <remarks>       The comparison is inclusive.       </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -687,11 +493,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if ((value.CompareTo(min) < 0) || (value.CompareTo(max) > 0))
             {
-                throw new ArgumentOutOfRangeException($"Min: { min }, Max: { max }, Value: { value }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"Min: { min }, Max: { max }, Value: { value }.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -701,11 +507,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value.CompareTo(limit) == 1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be smaller than or equal to { limit }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be smaller than or equal to { limit }.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -715,11 +521,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value.CompareTo(limit) != -1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be smaller than { limit }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be smaller than { limit }.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -729,11 +535,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value.CompareTo(limit) == -1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than or equal to { limit }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be greater than or equal to { limit }.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -743,12 +549,12 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value.CompareTo(limit) != 1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected to be greater than { limit }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be greater than { limit }.");
             }
 #endif
         }
-        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
 
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
         public static void IsNotSmaller<T>(T value, T limit)
@@ -757,11 +563,11 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value.CompareTo(limit) == -1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected not to be smaller than { limit }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected not to be smaller than { limit }.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__COMPARISON_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__COMPARISON_CHECKS)]
@@ -771,7 +577,7 @@ namespace DevTools
 #if COMPARISON_CHECKS
             if (value.CompareTo(limit) == 1)
             {
-                throw new ArgumentOutOfRangeException($"{ value } was expected not to be greater than { limit }.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected not to be greater than { limit }.");
             }
 #endif
         }
@@ -786,11 +592,11 @@ namespace DevTools
 #if ARITHMETIC_LOGIC_CHECKS
             if (*(byte*)&x > 1)
             {
-                throw new InvalidDataException($"The numerical value of the bool { nameof(x) } is { *(byte*)&x } which can lead to undefined behavior.");
+                throw new InvalidDataException(ASSERTION_FAILED_TAG + $"The numerical value of the bool { nameof(x) } is { *(byte*)&x } which can lead to undefined behavior.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS)]
@@ -800,11 +606,11 @@ namespace DevTools
 #if ARITHMETIC_LOGIC_CHECKS
             if ((uint)amount >= (uint)sizeof(T) * 8u)
             {
-                throw new ArgumentOutOfRangeException($"Shifting a { typeof(T) } by { amount } results in undefined behavior.");
+                throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"Shifting a { typeof(T) } by { amount } results in undefined behavior.");
             }
 #endif
         }
-        
+
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__ARITHMETIC_LOGIC_CHECKS)]
@@ -819,6 +625,33 @@ namespace DevTools
         /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__MEMORY_CHECKS"/>         </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Assert.Group(Assert.GroupAttribute.__NAME__MEMORY_CHECKS)]
+        unsafe public static void AreNotAliased(void* ptrA, long bytesA, void* ptrB, long bytesB)
+        {
+#if MEMORY_CHECKS
+            bool overlap = (ulong)ptrA < (ulong)ptrB && ((ulong)ptrA + (ulong)bytesA - 1 >= (ulong)ptrB);
+            overlap |= (ulong)ptrB < (ulong)ptrA && ((ulong)ptrB + (ulong)bytesB - 1 >= (ulong)ptrA);
+            overlap |= (ulong)ptrB == (ulong)ptrA;
+
+            if (overlap)
+            {
+                throw new MemberAccessException(ASSERTION_FAILED_TAG + $"The memory block, associated with the base address { Dump.Hex((ulong)ptrA) } and byte length { bytesA } overlaps with the region in memory associated with the base address {Dump.Hex((ulong)ptrB) } and byte length {bytesB }.");
+            }
+#endif
+        }
+
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__MEMORY_CHECKS"/>         </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Assert.Group(Assert.GroupAttribute.__NAME__MEMORY_CHECKS)]
+        unsafe public static void AreNotAliased<T, U>(T* ptrA, long lengthA, U* ptrB, long lengthB)
+            where T : unmanaged
+            where U : unmanaged
+        {
+            AreNotAliased((void*)ptrA, sizeof(T) * lengthA, (void*)ptrB, sizeof(U) * lengthB);
+        }
+
+        /// <summary>       Part of: <inheritdoc cref="Assert.GroupAttribute.__NAME__MEMORY_CHECKS"/>         </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Assert.Group(Assert.GroupAttribute.__NAME__MEMORY_CHECKS)]
         unsafe public static void IsMemoryAligned<T>(T* ptr)
             where T : unmanaged
         {
@@ -826,7 +659,7 @@ namespace DevTools
             switch (sizeof(T))
             {
                 case 2:
-                case 4: 
+                case 4:
                 case 8:
                 case 16:
                 case 32:
@@ -834,7 +667,7 @@ namespace DevTools
                 {
                     if ((ulong)ptr % (uint)sizeof(T) != 0)
                     {
-                        throw new DataMisalignedException($"The address { Dump.Hex((ulong)ptr) } of a { typeof(T) } of size { sizeof(T) } is misaligned by { (ulong)ptr % (uint)sizeof(T) } bytes.");
+                        throw new DataMisalignedException(ASSERTION_FAILED_TAG + $"The address { Dump.Hex((ulong)ptr) } of a { typeof(T) } of size { sizeof(T) } is misaligned by { (ulong)ptr % (uint)sizeof(T) } bytes.");
                     }
 
                     return;
