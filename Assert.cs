@@ -505,7 +505,7 @@ namespace DevTools
             where T : IComparable<T>
         {
 #if COMPARISON_CHECKS
-            if (value.CompareTo(limit) == 1)
+            if (value.CompareTo(limit) > 0)
             {
                 throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be smaller than or equal to { limit }.");
             }
@@ -519,7 +519,7 @@ namespace DevTools
             where T : IComparable<T>
         {
 #if COMPARISON_CHECKS
-            if (value.CompareTo(limit) != -1)
+            if (value.CompareTo(limit) > -1)
             {
                 throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be smaller than { limit }.");
             }
@@ -533,7 +533,7 @@ namespace DevTools
             where T : IComparable<T>
         {
 #if COMPARISON_CHECKS
-            if (value.CompareTo(limit) == -1)
+            if (value.CompareTo(limit) < 0)
             {
                 throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be greater than or equal to { limit }.");
             }
@@ -547,7 +547,7 @@ namespace DevTools
             where T : IComparable<T>
         {
 #if COMPARISON_CHECKS
-            if (value.CompareTo(limit) != 1)
+            if (value.CompareTo(limit) < 1)
             {
                 throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected to be greater than { limit }.");
             }
@@ -561,7 +561,7 @@ namespace DevTools
             where T : IComparable<T>
         {
 #if COMPARISON_CHECKS
-            if (value.CompareTo(limit) == -1)
+            if (value.CompareTo(limit) < 0)
             {
                 throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected not to be smaller than { limit }.");
             }
@@ -575,7 +575,7 @@ namespace DevTools
             where T : IComparable<T>
         {
 #if COMPARISON_CHECKS
-            if (value.CompareTo(limit) == 1)
+            if (value.CompareTo(limit) > 0)
             {
                 throw new ArgumentOutOfRangeException(ASSERTION_FAILED_TAG + $"{ value } was expected not to be greater than { limit }.");
             }
