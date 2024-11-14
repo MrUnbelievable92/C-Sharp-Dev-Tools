@@ -20,7 +20,7 @@ namespace DevTools.Unity.Editor
         private bool firstLoad;
         private bool anythingChanged;
 
-        private Dictionary<Assert.GroupAttribute, ulong> methodCallCounts = null;
+        private Dictionary<Assert.GroupAttribute, uint> methodCallCounts = null;
         private Dictionary<Assert.GroupAttribute, bool> definesToCheckMarks;
 
 
@@ -48,7 +48,7 @@ namespace DevTools.Unity.Editor
             {
                 ulong count = 0;
 
-                foreach (KeyValuePair<Assert.GroupAttribute, ulong> assertion in methodCallCounts)
+                foreach (KeyValuePair<Assert.GroupAttribute, uint> assertion in methodCallCounts)
                 {
                     count += assertion.Value;
                 }

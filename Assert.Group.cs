@@ -44,6 +44,7 @@ namespace DevTools
 
             internal string FileContent { get; private set; }
             internal string PublicName { get; private set; }
+
             internal static Assert.GroupAttribute[] Defines => new Assert.GroupAttribute[]
             {
                 new Assert.GroupAttribute{ FileContent = __FILE__BOOLEAN_CONDITION_CHECKS, PublicName = __NAME__BOOLEAN_CONDITION_CHECKS },
@@ -54,15 +55,21 @@ namespace DevTools
                 new Assert.GroupAttribute{ FileContent = __FILE__ARITHMETIC_LOGIC_CHECKS,  PublicName = __NAME__ARITHMETIC_LOGIC_CHECKS  },
                 new Assert.GroupAttribute{ FileContent = __FILE__MEMORY_CHECKS,            PublicName = __NAME__MEMORY_CHECKS            }
             };
+            private static string[] KnownUsingsWithAssertClasses => new string[]
+            {
+                "using NUnit.Framework;",
+                "using UnityEngine.Assertions",
+                "using static System.Diagnostics.Debug;"
+            };
 
-            internal static async Task<Dictionary<Assert.GroupAttribute, ulong>> CountMethodCallsAsync(string projectPath)
+            internal static async Task<Dictionary<Assert.GroupAttribute, uint>> CountMethodCallsAsync(string projectPath)
             {
                 try
                 {
                     Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap = GetAssertionsMappedToGroups();
-                    List<Task<Dictionary<Assert.GroupAttribute, ulong>>> jobs = CreateCountingTasks(methodToGroupMap, projectPath);
+                    List<Task<Dictionary<Assert.GroupAttribute, uint>>> jobs = CreateCountingTasks(methodToGroupMap, projectPath);
 
-                    return await CombineResults(jobs, methodToGroupMap);
+                    return await CombineResults(jobs);
                 }
                 catch (Exception ex)
                 {
@@ -70,7 +77,6 @@ namespace DevTools
                     return null;
                 }
             }
-
             private static bool ContainsOverload(Dictionary<MethodInfo, Assert.GroupAttribute> result, MethodInfo method)
             {
                 foreach (KeyValuePair<MethodInfo, Assert.GroupAttribute> item in result)
@@ -104,9 +110,7 @@ namespace DevTools
                 {
                     return string.Empty;
                 }
-                else if (script.Contains("using DevTools;") &&
-                        !script.Contains("using NUnit.Framework;") &&
-                        !script.Contains("using static System.Diagnostics.Debug;"))
+                else if (script.Contains("using DevTools;") && KnownUsingsWithAssertClasses.All(__using => !script.Contains(__using)))
                 {
                     return "Assert.";
                 }
@@ -129,9 +133,9 @@ Assert.IsFalse(string.IsNullOrEmpty(value));
 
                 return count;
             }
-            private static List<Task<Dictionary<Assert.GroupAttribute, ulong>>> CreateCountingTasks(Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap, string path)
+            private static List<Task<Dictionary<Assert.GroupAttribute, uint>>> CreateCountingTasks(Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap, string path)
             {
-                List<Task<Dictionary<Assert.GroupAttribute, ulong>>> tasks = new List<Task<Dictionary<Assert.GroupAttribute, ulong>>>(256);
+                List<Task<Dictionary<Assert.GroupAttribute, uint>>> tasks = new List<Task<Dictionary<Assert.GroupAttribute, uint>>>(256);
 
                 DirectoryExtensions.ForEachFile(path,
                 (file) =>
@@ -141,17 +145,17 @@ Assert.IsFalse(string.IsNullOrEmpty(value));
                         return;
                     }
 
-                    tasks.Add(Task<Dictionary<Assert.GroupAttribute, ulong>>.Factory.StartNew(
+                    tasks.Add(Task<Dictionary<Assert.GroupAttribute, uint>>.Factory.StartNew(
                     () =>
                     {
-                        Dictionary<Assert.GroupAttribute, ulong> callCounts = new Dictionary<Assert.GroupAttribute, ulong>();
+                        Dictionary<Assert.GroupAttribute, uint> callCounts = new Dictionary<Assert.GroupAttribute, uint>();
                         string script = File.ReadAllText(file);
                         string prefix = GetMethodPrefixFromUsingStatements(script);
 
                         foreach (KeyValuePair<MethodInfo, Assert.GroupAttribute> methodMapping in methodToGroupMap)
                         {
                             Assert.GroupAttribute group = methodMapping.Value;
-                            ulong numCalls = CountSubstrings(script, prefix + methodMapping.Key.Name);
+                            uint numCalls = CountSubstrings(script, prefix + methodMapping.Key.Name);
 
                             if (callCounts.ContainsKey(group))
                             {
@@ -169,13 +173,13 @@ Assert.IsFalse(string.IsNullOrEmpty(value));
 
                 return tasks;
             }
-            private static async Task<Dictionary<Assert.GroupAttribute, ulong>> CombineResults(List<Task<Dictionary<Assert.GroupAttribute, ulong>>> jobs, Dictionary<MethodInfo, Assert.GroupAttribute> methodToGroupMap)
+            private static async Task<Dictionary<Assert.GroupAttribute, uint>> CombineResults(List<Task<Dictionary<Assert.GroupAttribute, uint>>> jobs)
             {
-                Dictionary<Assert.GroupAttribute, ulong> result = await jobs[0]; // at the very least this very script is assigned a job
+                Dictionary<Assert.GroupAttribute, uint> result = await jobs[0]; // at the very least this very script is assigned a job
 
                 for (int i = 1; i < jobs.Count; i++)
                 {
-                    foreach (KeyValuePair<Assert.GroupAttribute, ulong> callCount in await jobs[i])
+                    foreach (KeyValuePair<Assert.GroupAttribute, uint> callCount in await jobs[i])
                     {
                         result[callCount.Key] += callCount.Value;
                     }
