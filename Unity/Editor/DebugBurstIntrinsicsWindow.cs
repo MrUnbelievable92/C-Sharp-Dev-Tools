@@ -1,5 +1,7 @@
 #if UNITY_EDITOR
 using System.IO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEditor;
 
@@ -52,6 +54,8 @@ namespace DevTools.Unity.Editor
 
         private static void DeactivatePreprocessorDirective(string define)
         {
+            List<Task> tasks = new List<Task>(256);
+
             DirectoryExtensions.ForEachFile(ProjectPath,
             (file) =>
             {
@@ -60,18 +64,26 @@ namespace DevTools.Unity.Editor
                     return;
                 }
 
-                string fileContent = File.ReadAllText(file);
-
-                if (!fileContent.Contains("//" + define))
+                tasks.Add(Task.Factory.StartNew(
+                () =>
                 {
-                    fileContent = fileContent.Replace(define, "//" + define);
-                    File.WriteAllText(file, fileContent);
-                }
+                    string fileContent = File.ReadAllText(file);
+
+                    if (!fileContent.Contains("//" + define))
+                    {
+                        fileContent = fileContent.Replace(define, "//" + define);
+                        File.WriteAllText(file, fileContent);
+                    }
+                }));
             });
+
+            Task.WaitAll(tasks.ToArray());
         }
 
         private static void ActivatePreprocessorDirective(string define)
         {
+            List<Task> tasks = new List<Task>(256);
+
             DirectoryExtensions.ForEachFile(ProjectPath,
             (file) =>
             {
@@ -79,19 +91,27 @@ namespace DevTools.Unity.Editor
                 {
                     return;
                 }
-
-                string fileContent = File.ReadAllText(file);
-
-                if (fileContent.Contains("//" + define))
+                
+                tasks.Add(Task.Factory.StartNew(
+                () =>
                 {
-                    fileContent = fileContent.Replace("//" + define, define);
-                    File.WriteAllText(file, fileContent);
-                }
+                    string fileContent = File.ReadAllText(file);
+
+                    if (fileContent.Contains("//" + define))
+                    {
+                        fileContent = fileContent.Replace("//" + define, define);
+                        File.WriteAllText(file, fileContent);
+                    }
+                }));
             });
+            
+            Task.WaitAll(tasks.ToArray());
         }
 
         private static void DeactivateFeatureSet(string featureSet)
         {
+            List<Task> tasks = new List<Task>(256);
+
             DirectoryExtensions.ForEachFile(ProjectPath,
             (file) =>
             {
@@ -99,26 +119,34 @@ namespace DevTools.Unity.Editor
                 {
                     return;
                 }
-
-                string fileContent = File.ReadAllText(file);
-
-                bool any = false;
-                int index = 0;
-                while ((index = fileContent.IndexOf("!" + featureSet, index + 1)) != -1)
+                
+                tasks.Add(Task.Factory.StartNew(
+                () =>
                 {
-                    any = true;
-                    fileContent = fileContent.Remove(index, 1);
-                }
+                    string fileContent = File.ReadAllText(file);
 
-                if (any)
-                {
-                    File.WriteAllText(file, fileContent);
-                }
+                    bool any = false;
+                    int index = 0;
+                    while ((index = fileContent.IndexOf("!" + featureSet, index + 1)) != -1)
+                    {
+                        any = true;
+                        fileContent = fileContent.Remove(index, 1);
+                    }
+
+                    if (any)
+                    {
+                        File.WriteAllText(file, fileContent);
+                    }
+                }));
             });
+            
+            Task.WaitAll(tasks.ToArray());
         }
 
         private static void ActivateFeatureSet(string featureSet)
         {
+            List<Task> tasks = new List<Task>(256);
+
             DirectoryExtensions.ForEachFile(ProjectPath,
             (file) =>
             {
@@ -126,26 +154,32 @@ namespace DevTools.Unity.Editor
                 {
                     return;
                 }
-
-                string fileContent = File.ReadAllText(file);
-
-                bool any = false;
-                int index = 0;
-                while ((index = fileContent.IndexOf(featureSet, index + 1)) != -1)
+                
+                tasks.Add(Task.Factory.StartNew(
+                () =>
                 {
-                    any = true;
-                    if (fileContent[index - 1] != '!')
+                    string fileContent = File.ReadAllText(file);
+
+                    bool any = false;
+                    int index = 0;
+                    while ((index = fileContent.IndexOf(featureSet, index + 1)) != -1)
                     {
-                        fileContent = fileContent.Insert(index, "!");
-                        index++;
+                        any = true;
+                        if (fileContent[index - 1] != '!')
+                        {
+                            fileContent = fileContent.Insert(index, "!");
+                            index++;
+                        }
                     }
-                }
 
-                if (any)
-                {
-                    File.WriteAllText(file, fileContent);
-                }
+                    if (any)
+                    {
+                        File.WriteAllText(file, fileContent);
+                    }
+                }));
             });
+            
+            Task.WaitAll(tasks.ToArray());
         }
 
 
